@@ -2,3 +2,27 @@
 spring:
   application:
     name: flow-limit-spring-boot-starter
+
+flowlimit:
+  enabled: false
+  redis-limit-flow-aspect:
+    syncCount: false
+    global-limit: false
+    prefix-key: "icecream::innovative-medicine:desktop-web:"
+    counter-key:
+      - "counter:1:second:"
+      - "counter:2:minutes:"
+      - "counter:5:minutes:"
+      - "counter:1:hour:"
+    counter-holding-time:
+      - 1000
+      - 180000
+      - 300000
+      - 3600000
+    counter-limit-number:
+      - 5
+      - 80
+      - 320
+      - 240000
+
+

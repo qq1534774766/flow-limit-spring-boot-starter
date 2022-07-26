@@ -1,0 +1,87 @@
+package cn.sinohealth.flowlimit.springboot.starter.properties;
+
+import lombok.Data;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+/**
+ * @Author: wenqiaogang
+ * @DateTime: 2022/7/26 10:59
+ * @Description: 配置类
+ */
+@Data
+@ConfigurationProperties(prefix = "flowlimit")
+@Component
+public class FlowLimitProperties {
+    /**
+     * 是否启用流量限制
+     */
+    private boolean enabled = false;
+    private RedisLimitFlowAspect redisLimitFlowAspect;
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public RedisLimitFlowAspect getRedisLimitFlowAspect() {
+        return redisLimitFlowAspect;
+    }
+
+    public void setRedisLimitFlowAspect(RedisLimitFlowAspect redisLimitFlowAspect) {
+        this.redisLimitFlowAspect = redisLimitFlowAspect;
+    }
+
+    @Data
+    @ConditionalOnClass(RedisTemplate.class)
+    @ConditionalOnProperty(prefix = "flowlimit.redis-limit-flow-aspect", name = "flowlimit.redis-limit-flow-aspect")
+    public static class RedisLimitFlowAspect {
+        /**
+         * 是否开启同步计数，如不要求精准限流，则无需开启。
+         * <br/>
+         * 开启后，将使用严格计数，开销一定性能。
+         */
+        private boolean syncCount = false;
+
+        /**
+         * 是否全局限制，即所有用户所有操作均被计数限制.
+         * <br/>
+         * FALSE则需要传递获取用户ID的方法。
+         */
+        private boolean globalLimit = true;
+
+        /**
+         * baseKey，即全局key前缀
+         * <br/>形式：
+         * xxx:xxx:xxx:
+         */
+        private String prefixKey;
+
+        /**
+         * 每个计数器的Key
+         */
+        private List<String> counterKey;
+
+        /**
+         * 每个计数器的保持时长，单位是毫秒
+         */
+        private List<Long> counterHoldingTime;
+
+        /**
+         * 每个计数器对应的限流次数，即接口调用次数限制
+         */
+        private List<Integer> counterLimitNumber;
+
+
+    }
+
+
+}
