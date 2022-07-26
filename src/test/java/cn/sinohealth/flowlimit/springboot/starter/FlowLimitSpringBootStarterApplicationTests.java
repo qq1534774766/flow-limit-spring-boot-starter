@@ -1,7 +1,8 @@
 package cn.sinohealth.flowlimit.springboot.starter;
 
-import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
+import cn.sinohealth.flowlimit.springboot.starter.service.aspect.impl.RedisLimitFlowAspect;
 import org.junit.jupiter.api.Test;
+//import cn.sinohealth.flowlimit.springboot.starter.service.aspect.impl.RedisLimitFlowAspect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -9,11 +10,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 class FlowLimitSpringBootStarterApplicationTests {
 
     @Autowired
-    private FlowLimitProperties flowLimitProperties;
+    private RedisLimitFlowAspect redisLimitFlowAspect;
 
     @Test
     void contextLoads() {
-        System.out.println(flowLimitProperties.getRedisLimitFlowAspect().isSyncCount());
+        System.out.println(redisLimitFlowAspect);
     }
 
 }

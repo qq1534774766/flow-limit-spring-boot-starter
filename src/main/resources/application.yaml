@@ -4,12 +4,12 @@ spring:
     name: flow-limit-spring-boot-starter
 
 flowlimit:
-  enabled: false
+  enabled: true
   redis-limit-flow-aspect:
-    syncCount: false
-    global-limit: false
+    enabled-global-limit: false
+    enabled-sync-count: false
     prefix-key: "icecream::innovative-medicine:desktop-web:"
-    counter-key:
+    counter-keys:
       - "counter:1:second:"
       - "counter:2:minutes:"
       - "counter:5:minutes:"
