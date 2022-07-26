@@ -1,0 +1,4 @@
+#应用名称
+spring:
+  application:
+    name: flow-limit-spring-boot-starter
