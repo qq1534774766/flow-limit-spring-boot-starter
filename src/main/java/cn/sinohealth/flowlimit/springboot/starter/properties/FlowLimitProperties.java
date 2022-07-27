@@ -1,10 +1,7 @@
 package cn.sinohealth.flowlimit.springboot.starter.properties;
 
 import lombok.Data;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -23,11 +20,10 @@ public class FlowLimitProperties {
      */
     private boolean enabled = false;
 
-    private RedisLimitFlowAspectProperties redisLimitFlowAspect;
+    private RedisFlowLimitAspectProperties redisFlowLimitAspectProperties;
 
     @Data
-    @ConditionalOnClass(RedisTemplate.class)
-    public static class RedisLimitFlowAspectProperties {
+    public static class RedisFlowLimitAspectProperties {
         /**
          * 是否开启同步计数，如不要求精准限流，则无需开启。
          * <br/>
@@ -66,6 +62,5 @@ public class FlowLimitProperties {
 
 
     }
-
 
 }

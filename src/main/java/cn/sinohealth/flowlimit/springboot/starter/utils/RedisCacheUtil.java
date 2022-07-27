@@ -1,10 +1,8 @@
 package cn.sinohealth.flowlimit.springboot.starter.utils;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.BoundSetOperations;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.data.redis.core.*;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -16,10 +14,15 @@ import java.util.concurrent.TimeUnit;
  * @author ruoyi
  **/
 @SuppressWarnings(value = {"unchecked", "rawtypes"})
-@Component
 public class RedisCacheUtil {
-    @Autowired
     public RedisTemplate<String, Object> redisTemplate;
+
+    public RedisCacheUtil() {
+    }
+
+    public RedisCacheUtil(RedisTemplate<String, Object> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     /**
      * 缓存基本的对象，Integer、String、实体类等

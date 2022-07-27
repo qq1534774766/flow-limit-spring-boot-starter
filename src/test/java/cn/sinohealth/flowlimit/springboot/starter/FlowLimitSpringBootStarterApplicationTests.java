@@ -1,9 +1,8 @@
 package cn.sinohealth.flowlimit.springboot.starter;
 
-import cn.sinohealth.flowlimit.springboot.starter.service.aspect.impl.RedisLimitFlowAspect;
 import cn.sinohealth.flowlimit.springboot.starter.utils.RedisCacheUtil;
 import org.junit.jupiter.api.Test;
-//import cn.sinohealth.flowlimit.springboot.starter.service.aspect.impl.RedisLimitFlowAspect;
+//import cn.sinohealth.flowlimit.springboot.starter.service.aspect.impl.RedisFlowLimitAspect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;

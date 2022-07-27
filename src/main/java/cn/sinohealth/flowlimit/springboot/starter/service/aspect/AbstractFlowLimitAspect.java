@@ -1,17 +1,9 @@
 package cn.sinohealth.flowlimit.springboot.starter.service.aspect;
 
-import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
-import cn.sinohealth.flowlimit.springboot.starter.service.FlowLimitService;
-import cn.sinohealth.flowlimit.springboot.starter.service.RedisFlowLimitService;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
 
 /**
  * @Author: wenqiaogang
@@ -19,10 +11,7 @@ import org.springframework.stereotype.Component;
  * @Description: 限流、反爬抽象类。 《模板方法模式》，子类可以继承该类，以实现不同的限制策略
  * <br/>
  */
-@Component
-@Aspect
-@ConditionalOnBean(FlowLimitService.class)
-public abstract class AbstractLimitFlowAspect {
+public abstract class AbstractFlowLimitAspect {
     /**
      * 定义切入点，子类必须重写并指定连接点
      */

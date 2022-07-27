@@ -1,10 +1,9 @@
 package cn.sinohealth.flowlimit.springboot.starter.config;
 
-import cn.sinohealth.flowlimit.springboot.starter.service.aspect.impl.RedisLimitFlowAspect;
+import cn.sinohealth.flowlimit.springboot.starter.service.aspect.impl.RedisFlowLimitAspect;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 
@@ -15,7 +14,7 @@ import java.util.List;
  */
 @Configuration
 @Aspect
-public class RedisFlowLimitConfig extends RedisLimitFlowAspect {
+public class RedisFlowLimitConfig extends RedisFlowLimitAspect {
 
     @Pointcut("@annotation(org.springframework.web.bind.annotation.RequestMapping)")
     protected void pointcut() {
@@ -23,7 +22,6 @@ public class RedisFlowLimitConfig extends RedisLimitFlowAspect {
 
     @Override
     protected void restructureCounterKey(List<String> counterKey) {
-
     }
 
 

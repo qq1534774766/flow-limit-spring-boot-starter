@@ -1,15 +1,13 @@
 package cn.sinohealth.flowlimit.springboot.starter.service.aspect.impl;
 
 import cn.sinohealth.flowlimit.springboot.starter.service.RedisFlowLimitService;
-import cn.sinohealth.flowlimit.springboot.starter.service.aspect.AbstractLimitFlowAspect;
+import cn.sinohealth.flowlimit.springboot.starter.service.aspect.AbstractFlowLimitAspect;
 import cn.sinohealth.flowlimit.springboot.starter.utils.RedisCacheUtil;
 import lombok.Data;
 import org.apache.commons.lang3.ObjectUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -20,10 +18,8 @@ import java.util.stream.Collectors;
  * @DateTime: 2022/7/25 10:33
  * @Description: Redis数据源，计数器的方式限流。排除未登录用户
  */
-@Component
 @Data
-@ConditionalOnBean({RedisCacheUtil.class, RedisFlowLimitService.class})
-public abstract class RedisLimitFlowAspect extends AbstractLimitFlowAspect {
+public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
 
     private RedisCacheUtil redisCacheUtil;
 
@@ -88,16 +84,16 @@ public abstract class RedisLimitFlowAspect extends AbstractLimitFlowAspect {
      */
     public static final String OVERSTEP_FLOW_VERIFICATION = "overstep:flow:verification";
 
-    public RedisLimitFlowAspect() {
+    public RedisFlowLimitAspect() {
 
     }
 
-    @Autowired
+    @Autowired(required = false)
     public void setRedisCacheUtil(RedisCacheUtil redisCacheUtil) {
         this.redisCacheUtil = redisCacheUtil;
     }
 
-    @Autowired
+    @Autowired(required = false)
     public void setRedisFlowLimitService(RedisFlowLimitService redisFlowLimitService) {
         //封装公共属性
         this.enabledGlobalLimit = redisFlowLimitService.getRedisLimitFlowAspectProperties().isEnabledGlobalLimit();
@@ -153,7 +149,7 @@ public abstract class RedisLimitFlowAspect extends AbstractLimitFlowAspect {
     protected abstract void restructureCounterKey(List<String> counterKey);
 
     /**
-     * 对key进行细粒的操作
+     * 对key进行细粒的操作,即计数器自增
      *
      * @param key
      * @param timeout
