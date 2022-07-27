@@ -1,24 +1,17 @@
 package cn.sinohealth.flowlimit.springboot.starter;
 
-import cn.sinohealth.flowlimit.springboot.starter.utils.RedisCacheUtil;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
-import org.springframework.data.redis.core.script.DefaultScriptExecutor;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @SpringBootTest
 class FlowLimitSpringBootStarterApplicationTests {
 
-    @Autowired
-    private RedisCacheUtil redisCacheUtil;
 
     @Autowired
     public RedisTemplate<String, Object> redisTemplate;

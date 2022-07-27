@@ -1,5 +1,7 @@
 package cn.sinohealth.flowlimit.springboot.starter;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -9,14 +11,15 @@ import org.springframework.web.bind.annotation.RestController;
  * @Description: TODO
  */
 @RestController
-public class Cont {
+public class TestController {
     /**
      * adsad
      *
      * @return
      */
     @RequestMapping("/")
-    public String index() {
-        return "123321312";
+    public Result index() {
+        return new Result(200, null);
     }
 }
+

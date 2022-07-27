@@ -1,14 +1,14 @@
-package cn.sinohealth.flowlimit.springboot.starter.service.aspect.impl;
+package cn.sinohealth.flowlimit.springboot.starter.aspect.impl;
 
 import cn.sinohealth.flowlimit.springboot.starter.service.RedisFlowLimitService;
-import cn.sinohealth.flowlimit.springboot.starter.service.aspect.AbstractFlowLimitAspect;
+import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractFlowLimitAspect;
 import lombok.Data;
-import org.apache.commons.lang3.ObjectUtils;
 import org.aspectj.lang.JoinPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 
+import javax.annotation.PostConstruct;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -23,8 +23,6 @@ import java.util.stream.Collectors;
 public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
 
     private RedisTemplate<String, Object> redisTemplate;
-
-
 
     /**
      * 是否全局限制，即所有用户所有操作均被计数限制.
@@ -97,9 +95,9 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
         CounterKeyProperties.keyNumber = redisFlowLimitService.getRedisLimitFlowAspectProperties().getCounterKeys().size();
     }
 
-    @Override
-    protected final boolean enabledFlowLimit(JoinPoint joinPoint) {
-        return redisTemplate != null && CounterKeyProperties.counterKeys != null;
+    @PostConstruct
+    public void initBeanProperties() {
+        enabled = redisTemplate != null && CounterKeyProperties.counterKeys != null;
     }
 
     @Override
@@ -107,8 +105,12 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
         List<String> counterKey = CounterKeyProperties.counterKeys;
         if (!enabledGlobalLimit) {
             //未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
-            counterKey = Optional.ofNullable(restructureCounterKey(joinPoint, counterKey))
-                    .orElse(counterKey);
+            counterKey = counterKey.stream()
+                    .map(key ->
+                            key.concat(Optional
+                                    .ofNullable(appendCounterKeyWithUserId(joinPoint))
+                                    .orElse("")))
+                    .collect(Collectors.toList());
         }
         List<Long> counterHoldingTime = CounterKeyProperties.counterHoldingTime;
         List<Integer> counterLimitNumber = CounterKeyProperties.counterLimitNumber;
@@ -122,10 +124,14 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
         return currentIsLimit;
     }
 
+
     /**
      * 重构计数器的key，未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
+     *
+     * @param joinPoint
+     * @return 重构逻辑
      */
-    protected abstract List<String> restructureCounterKey(JoinPoint joinPoint, List<String> counterKey);
+    protected abstract String appendCounterKeyWithUserId(JoinPoint joinPoint);
 
     private static final String LUA_INC_SCRIPT_TEXT =
             " local setSuccess = redis.call('set',KEYS[1],1,'ex',ARGV[1],'nx');" +
@@ -156,15 +162,13 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
         //设置key成功: 1
         // 原来的key自增失败，重设新的key: 2
         // key自增成功: 3
-        long aLong = Optional.ofNullable(result).orElse(-1L);
-        if (aLong == 1 || aLong == 2) {
+        if (Optional.ofNullable(result).orElse(-1L) < 3) {
             return false;
         }
-        Integer alreadyCount = (Integer) redisTemplate.opsForValue().get(key);
-        return !ObjectUtils.isNotEmpty(alreadyCount) || alreadyCount > countMax;
+        return Optional.ofNullable((Integer) redisTemplate.opsForValue().get(key))
+                .map(alreadyCount -> alreadyCount > countMax)
+                .orElse(false);
     }
-
-
 
 
     /**
