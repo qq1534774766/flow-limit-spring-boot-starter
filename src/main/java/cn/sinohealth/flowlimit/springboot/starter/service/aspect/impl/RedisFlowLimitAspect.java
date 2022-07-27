@@ -5,11 +5,18 @@ import cn.sinohealth.flowlimit.springboot.starter.service.aspect.AbstractFlowLim
 import cn.sinohealth.flowlimit.springboot.starter.utils.RedisCacheUtil;
 import lombok.Data;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -21,15 +28,9 @@ import java.util.stream.Collectors;
 @Data
 public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
 
-    private RedisCacheUtil redisCacheUtil;
+    private RedisTemplate<String, Object> redisTemplate;
 
 
-    /**
-     * 是否开启同步计数，如不要求精准限流，则无需开启。
-     * <br/>
-     * 开启后，将使用严格计数，开销一定性能。
-     */
-    private boolean enabledSyncCount;
 
     /**
      * 是否全局限制，即所有用户所有操作均被计数限制.
@@ -68,10 +69,6 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
          * 每个计数器对应的限流次数，即接口调用次数限制
          */
         private static List<Integer> counterLimitNumber;
-        /**
-         * 超时单位，毫秒
-         */
-        private static final TimeUnit HOLDING_TIME_UNIT = TimeUnit.MILLISECONDS;
     }
 
 
@@ -89,15 +86,14 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
     }
 
     @Autowired(required = false)
-    public void setRedisCacheUtil(RedisCacheUtil redisCacheUtil) {
-        this.redisCacheUtil = redisCacheUtil;
+    public void setRedisCacheUtil(RedisTemplate<String, Object> redisTemplate) {
+        this.redisTemplate = redisTemplate;
     }
 
     @Autowired(required = false)
     public void setRedisFlowLimitService(RedisFlowLimitService redisFlowLimitService) {
         //封装公共属性
         this.enabledGlobalLimit = redisFlowLimitService.getRedisLimitFlowAspectProperties().isEnabledGlobalLimit();
-        this.enabledSyncCount = redisFlowLimitService.getRedisLimitFlowAspectProperties().isEnabledSyncCount();
         //封装properties
         CounterKeyProperties.prefixKey = redisFlowLimitService.getRedisLimitFlowAspectProperties().getPrefixKey();
         CounterKeyProperties.counterKeys = redisFlowLimitService.getRedisLimitFlowAspectProperties().getCounterKeys().stream()
@@ -107,37 +103,26 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
         CounterKeyProperties.keyNumber = redisFlowLimitService.getRedisLimitFlowAspectProperties().getCounterKeys().size();
     }
 
-    /**
-     * 定义切入点
-     */
     @Override
-    @Pointcut()
-    protected abstract void pointcut();
-
+    protected boolean enabledFlowLimit() {
+        return redisTemplate != null && CounterKeyProperties.counterKeys != null;
+    }
 
     @Override
-    protected final boolean limitProcess(JoinPoint joinPoint) {
+    protected final boolean limitProcess(JoinPoint joinPoint) throws Throwable {
         List<String> counterKey = CounterKeyProperties.counterKeys;
         if (!enabledGlobalLimit) {
             //未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
-            restructureCounterKey(counterKey);
+            counterKey = Optional.ofNullable(restructureCounterKey(counterKey))
+                    .orElse(counterKey);
         }
         List<Long> counterHoldingTime = CounterKeyProperties.counterHoldingTime;
         List<Integer> counterLimitNumber = CounterKeyProperties.counterLimitNumber;
         //当前计数器是否限制？
         boolean currentIsLimit = false;
         //遍历计数器
-        if (!enabledSyncCount) {
-            //未开启严格计数
-            for (int i = 0; i < counterKey.size() && !currentIsLimit; i++) {
-                currentIsLimit = counterProcess(counterKey.get(i), counterHoldingTime.get(i), counterLimitNumber.get(i));
-            }
-        } else {
-            //开启严格计数
-            for (int i = 0; i < counterKey.size() && !currentIsLimit; i++) {
-                currentIsLimit = counterProcessWithLock(counterKey.get(i), counterHoldingTime.get(i), counterLimitNumber.get(i),
-                        CounterKeyProperties.prefixKey + "lock:");
-            }
+        for (int i = 0; i < counterKey.size() && !currentIsLimit; i++) {
+            currentIsLimit = counterProcess(counterKey.get(i), counterHoldingTime.get(i), counterLimitNumber.get(i));
         }
         //当且仅当所有计数器都返回false才不限制
         return currentIsLimit;
@@ -146,10 +131,26 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
     /**
      * 重构计数器的key，未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
      */
-    protected abstract void restructureCounterKey(List<String> counterKey);
+    protected abstract List<String> restructureCounterKey(List<String> counterKey);
+
+    private static final String LUA_INC_SCRIPT_TEXT =
+            " local setSuccess = redis.call('set',KEYS[1],1,'ex',ARGV[1],'nx');" +
+                    " if(type(setSuccess)=='table') then" +
+                    " return -1;" +
+                    " else" +
+                    " redis.call('incr',KEYS[1]);" +
+                    " local keyTtl = redis.call('ttl',KEYS[1]);" +
+                    " if(keyTtl==-1) then" +
+                    " redis.call('set',KEYS[1],1,'ex',ARGV[1],'xx');" +
+                    " return -2;" +
+                    " end" +
+                    " end" +
+                    " return redis.call('get',KEYS[1]);";
+    private static final DefaultRedisScript<Object> REDIS_INC_SCRIPT = new DefaultRedisScript<>(LUA_INC_SCRIPT_TEXT, Object.class);
 
     /**
      * 对key进行细粒的操作,即计数器自增
+     * 会用LUA脚本实现,如果Redis宕机，那么会拦截所有请求。
      *
      * @param key
      * @param timeout
@@ -157,87 +158,16 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
      * @return ture 当前key的计数器超出限制，禁止访问
      */
     private boolean counterProcess(String key, long timeout, Integer countMax) {
-        boolean success = redisCacheUtil.setCacheObjectIfAbsent(key, 1L, timeout, CounterKeyProperties.HOLDING_TIME_UNIT);
-        if (!success) {
-            //key已经存在，获取当前计数
-            Object cacheObject = redisCacheUtil.getCacheObject(key);
-            Integer alreadyCount = (Integer) cacheObject;
-            if (ObjectUtils.isNotEmpty(alreadyCount) && alreadyCount >= countMax) {
-                //超出限流，限制
-                return true;
-            } else {
-                //未超出，不限制
-                redisCacheUtil.increaseValue(key);
-                return false;
-            }
-        }
-        //第一次设置key，不限制
-        return false;
-    }
-
-    /**
-     * 对key进行细粒的操作,加锁
-     *
-     * @param key
-     * @param timeout
-     * @param countMax
-     * @return ture 当前key的计数器超出限制，禁止访问
-     */
-    private boolean counterProcessWithLock(String key, long timeout, Integer countMax, String lockKey) {
-        boolean success = redisCacheUtil.setCacheObjectIfAbsent(key, 1L, timeout, CounterKeyProperties.HOLDING_TIME_UNIT);
-        if (!success) {
-            //key已经存在，获取当前计数
-            //加锁
-            while (true) {
-                Boolean lock = redisCacheUtil.setCacheObjectIfAbsent(lockKey, 1L, 100L, TimeUnit.MILLISECONDS);
-                if (lock) {
-                    Object cacheObject = redisCacheUtil.getCacheObject(key);
-                    Integer alreadyCount = (Integer) cacheObject;
-                    if (ObjectUtils.isNotEmpty(alreadyCount) && alreadyCount >= countMax) {
-                        //超出限流，限制
-                        redisCacheUtil.deleteObject(lockKey);
-                        return true;
-                    } else {
-                        //未超出，不限制
-                        redisCacheUtil.increaseValue(key);
-                        redisCacheUtil.deleteObject(lockKey);
-                        return false;
-                    }
-                }
-            }
-        }
-        //第一次设置key，不限制
-        return false;
+        Object result = redisTemplate.execute(REDIS_INC_SCRIPT, Collections.singletonList(key), timeout);
+        //设置key成功:-1
+        // 原来的key自增失败，重设新的key:-2
+        // key自增成功，key的值
+        return Integer.parseInt(String.valueOf(result)) > countMax;
+//        return false;
     }
 
 
-    /**
-     * 拒绝策略
-     *
-     * @return 按需返回
-     * @throws Throwable
-     */
-    @Override
-    protected Object rejectHandle(JoinPoint joinPoint) throws Throwable {
-        //获取用户是否通过人机验证（滑动验证码等）
-        if (isVerificationSucceeded()) {
-            //完成验证，清空计数器
-            resetLimiter(joinPoint);
-            return null;
-        }
-        //未完成验证
-        throw new Exception("接口调用频繁，稍后重试");
-    }
 
-    /**
-     * 如果用户遭到限流，那么需要进行验证码验证。
-     * 验证结果推荐通过Redis获取。
-     *
-     * @return TRUE：完成验证。FALSE：未完成验证
-     */
-    private boolean isVerificationSucceeded() {
-        return false;
-    }
 
     /**
      * 重置所有的流量限制的计数器
@@ -246,7 +176,7 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
     protected final Object resetLimiter(JoinPoint joinPoint) {
         List<String> counterKey = CounterKeyProperties.counterKeys;
         for (String key : counterKey) {
-            redisCacheUtil.deleteObject(key);
+            redisTemplate.delete(key);
         }
         return null;
     }

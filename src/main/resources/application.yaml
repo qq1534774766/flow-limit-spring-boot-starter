@@ -13,21 +13,20 @@ spring:
         max-active: 8
 
 flowlimit:
-  enabled: true
+  enabled: false
   redis-flow-limit-aspect-properties:
     enabled-global-limit: false
-    enabled-sync-count: false
-    prefix-key: "icecream::innovative-medicine:desktop-web:redis:flow:limit"
+    prefix-key: "icecreamtest::innovative-medicine:desktop-web:redis:flow:limit"
     counter-keys:
-      - "counter:1:second:"
-      - "counter:2:minutes:"
-      - "counter:5:minutes:"
-      - "counter:1:hour11:"
+      - "counter:second:1:"
+      - "counter:minutes:2:"
+      - "counter:minutes:5:"
+      - "counter:hour:1:"
     counter-holding-time:
-      - 1000
-      - 180000
-      - 300000
-      - 3600000
+      - 1
+      - 180
+      - 300
+      - 3600
     counter-limit-number:
       - 5
       - 80

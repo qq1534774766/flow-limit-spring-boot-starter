@@ -24,12 +24,6 @@ public class FlowLimitProperties {
 
     @Data
     public static class RedisFlowLimitAspectProperties {
-        /**
-         * 是否开启同步计数，如不要求精准限流，则无需开启。
-         * <br/>
-         * 开启后，将使用严格计数，开销一定性能。
-         */
-        private boolean enabledSyncCount = false;
 
         /**
          * 是否全局限制，即所有用户所有操作均被计数限制.
@@ -51,7 +45,7 @@ public class FlowLimitProperties {
         private List<String> counterKeys;
 
         /**
-         * 每个计数器的保持时长，单位是毫秒
+         * 每个计数器的保持时长，单位是秒
          */
         private List<Long> counterHoldingTime;
 

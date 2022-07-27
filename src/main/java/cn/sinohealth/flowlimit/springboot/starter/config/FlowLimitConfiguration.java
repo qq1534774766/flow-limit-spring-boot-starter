@@ -33,13 +33,12 @@ abstract class FlowLimitConfiguration {
     @AutoConfigureAfter({RedisAutoConfiguration.class})
     static class RedisFlowLimitConfiguration {
         @Bean
-        @ConditionalOnBean(RedisTemplate.class)
         public RedisCacheUtil redisCacheUtil(RedisTemplate<String, Object> redisTemplate) {
             return new RedisCacheUtil(redisTemplate);
         }
 
         @Bean
-        @ConditionalOnProperty(prefix = "flowlimit", name = "redis-limit-flow-aspect.prefix-key")
+        @ConditionalOnProperty(prefix = "flowlimit", name = "redis-flow-limit-aspect-properties.prefix-key")
         @ConditionalOnBean(FlowLimitService.class)
         public RedisFlowLimitService redisFlowLimitService(FlowLimitService flowLimitService) {
             return new RedisFlowLimitService(flowLimitService);

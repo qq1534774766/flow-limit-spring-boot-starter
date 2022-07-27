@@ -2,6 +2,7 @@ package cn.sinohealth.flowlimit.springboot.starter.service.aspect;
 
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 
@@ -15,7 +16,6 @@ public abstract class AbstractFlowLimitAspect {
     /**
      * 定义切入点，子类必须重写并指定连接点
      */
-    @Pointcut()
     protected abstract void pointcut();
 
     /**
@@ -28,15 +28,28 @@ public abstract class AbstractFlowLimitAspect {
         return flowLimitProcess(joinPoint);
     }
 
+
+    /**
+     * 是否开启流量限制
+     *
+     * @return true 开启，false  未开启
+     */
+    protected abstract boolean enabledFlowLimit();
+
     /**
      * 定义模板方法，禁止子类重写方法
      */
     protected final Object flowLimitProcess(JoinPoint joinPoint) throws Throwable {
+        if (!enabledFlowLimit()) {
+            //其他操作，如验证通过重置限制计数器等。最后返回执行结果
+            return otherHandle(joinPoint, false, null);
+        }
         //限流逻辑
         boolean isReject = limitProcess(joinPoint);
-        //被限流, 回调拒绝策略方法
         Object rejectResult = null;
-        if (isReject) {
+        //被限流
+        if (isReject && !beforeLimitingHappenWhetherContinueLimit(joinPoint)) {
+            //调拒绝策略
             rejectResult = rejectHandle(joinPoint);
         }
         //其他操作，如验证通过重置限制计数器等。最后返回执行结果
@@ -49,7 +62,16 @@ public abstract class AbstractFlowLimitAspect {
      *
      * @return true:当前请求被限制,即被拒绝。
      */
-    protected abstract boolean limitProcess(JoinPoint joinPoint);
+    protected abstract boolean limitProcess(JoinPoint joinPoint) throws Throwable;
+
+    /**
+     * 在限制发生之前是否继续限制
+     * <br/>
+     * 可以实现滑动验证码，手机验证码登录验证操作。
+     *
+     * @return TRUE：完成验证->清空计数器->放行。FALSE：未完成验证，执行拒绝策略。
+     */
+    protected abstract boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint joinPoint);
 
     /**
      * 拒绝策略，当被limitProcess返回TRUE被调用。
@@ -74,13 +96,13 @@ public abstract class AbstractFlowLimitAspect {
      * @return 可以是ProcessJoinPoint.process()的方法执行结果，前提是使用的是环绕增强！
      */
     protected Object otherHandle(JoinPoint joinPoint, boolean isReject, Object rejectResult) throws Throwable {
-        if (isReject && joinPoint instanceof ProceedingJoinPoint) {
+        if (!isReject && joinPoint instanceof ProceedingJoinPoint) {
             //默认：拒绝策略未执行或执行了但选择放行，rejectResult即为null，若使用的是AOP中的环绕增强，则执行
             return ((ProceedingJoinPoint) joinPoint).proceed();
         }
         //执行拒绝策略并拒绝  -->取消调用接口
         // 非环绕方法。  -->无需调用，即null
-        return null;
+        return rejectResult;
     }
 
     /**

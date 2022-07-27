@@ -18,7 +18,7 @@ public class RedisFlowLimitService {
         int size2 = flowLimitService.getFlowLimitProperties().getRedisFlowLimitAspectProperties().getCounterHoldingTime().size();
         int size3 = flowLimitService.getFlowLimitProperties().getRedisFlowLimitAspectProperties().getCounterKeys().size();
         if (!(size1 == size2 && size1 == size3)) {
-            throw new IllegalArgumentException("redis的key数量与配置值数量不一致！");
+            throw new IllegalArgumentException("redis的key数量与相应配置值数量不一致！");
         }
     }
 

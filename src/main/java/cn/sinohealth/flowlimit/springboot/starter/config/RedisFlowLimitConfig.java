@@ -1,6 +1,7 @@
 package cn.sinohealth.flowlimit.springboot.starter.config;
 
 import cn.sinohealth.flowlimit.springboot.starter.service.aspect.impl.RedisFlowLimitAspect;
+import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.context.annotation.Configuration;
@@ -16,13 +17,23 @@ import java.util.List;
 @Aspect
 public class RedisFlowLimitConfig extends RedisFlowLimitAspect {
 
-    @Pointcut("@annotation(org.springframework.web.bind.annotation.RequestMapping)")
+    @Pointcut("within(cn.sinohealth.flowlimit.springboot.starter.Cont)&&@annotation(org.springframework.web.bind.annotation.RequestMapping)")
     protected void pointcut() {
     }
 
     @Override
-    protected void restructureCounterKey(List<String> counterKey) {
+    protected boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint joinPoint) {
+        return false;
+    }
+
+    @Override
+    protected Object rejectHandle(JoinPoint joinPoint) throws Throwable {
+        throw new Exception("接口调用频繁");
     }
 
 
+    @Override
+    protected List<String> restructureCounterKey(List<String> counterKey) {
+        return null;
+    }
 }
