@@ -1,9 +1,8 @@
-package cn.sinohealth.flowlimit.springboot.starter.service.aspect.impl;
+package cn.sinohealth.flowlimit.springboot.starter.aspect.impl;
 
 import cn.sinohealth.flowlimit.springboot.starter.service.RedisFlowLimitService;
-import cn.sinohealth.flowlimit.springboot.starter.service.aspect.AbstractFlowLimitAspect;
+import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractFlowLimitAspect;
 import lombok.Data;
-import org.apache.commons.lang3.ObjectUtils;
 import org.aspectj.lang.JoinPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -13,7 +12,6 @@ import javax.annotation.PostConstruct;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -105,11 +103,6 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
     @Override
     protected final boolean limitProcess(JoinPoint joinPoint) throws Throwable {
         List<String> counterKey = CounterKeyProperties.counterKeys;
-//        if (!enabledGlobalLimit) {
-//            //未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
-//            counterKey = Optional.ofNullable(restructureCounterKey(joinPoint, counterKey))
-//                    .orElse(counterKey);
-//        }
         if (!enabledGlobalLimit) {
             //未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
             counterKey = counterKey.stream()
@@ -131,13 +124,6 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
         return currentIsLimit;
     }
 
-    /**
-     *
-     * @param joinPoint
-     * @param counterKey application.yaml配置的key
-     * @return
-     */
-//    protected abstract List<String> restructureCounterKey(JoinPoint joinPoint, List<String> counterKey);
 
     /**
      * 重构计数器的key，未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流

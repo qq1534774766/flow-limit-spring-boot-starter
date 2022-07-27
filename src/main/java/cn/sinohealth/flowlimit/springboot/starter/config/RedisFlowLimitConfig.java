@@ -1,15 +1,11 @@
 package cn.sinohealth.flowlimit.springboot.starter.config;
 
-import cn.sinohealth.flowlimit.springboot.starter.service.aspect.impl.RedisFlowLimitAspect;
+import cn.sinohealth.flowlimit.springboot.starter.Result;
+import cn.sinohealth.flowlimit.springboot.starter.aspect.impl.RedisFlowLimitAspect;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.List;
-import java.util.Random;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * @Author: wenqiaogang
@@ -32,12 +28,12 @@ public class RedisFlowLimitConfig extends RedisFlowLimitAspect {
 
     @Override
     protected boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint joinPoint) {
-        return false;
+        return true;
     }
 
     @Override
     protected Object rejectHandle(JoinPoint joinPoint) throws Throwable {
-        throw new Exception("接口调用频繁");
+        return new Result(403, "接口调用频繁");
     }
 
 
