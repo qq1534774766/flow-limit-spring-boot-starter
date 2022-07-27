@@ -7,6 +7,8 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.Random;
+
 /**
  * @Author: wenqiaogang
  * @DateTime: 2022/7/26 17:56
@@ -28,7 +30,7 @@ public class RedisFlowLimitConfig extends RedisFlowLimitAspect {
 
     @Override
     protected boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint joinPoint) {
-        return true;
+        return false;
     }
 
     @Override
@@ -39,6 +41,6 @@ public class RedisFlowLimitConfig extends RedisFlowLimitAspect {
 
     @Override
     protected String appendCounterKeyWithUserId(JoinPoint joinPoint) {
-        return null;
+        return new Random().nextInt(1000) + "";
     }
 }
