@@ -2,22 +2,16 @@ package cn.sinohealth.flowlimit.springboot.starter.service.aspect.impl;
 
 import cn.sinohealth.flowlimit.springboot.starter.service.RedisFlowLimitService;
 import cn.sinohealth.flowlimit.springboot.starter.service.aspect.AbstractFlowLimitAspect;
-import cn.sinohealth.flowlimit.springboot.starter.utils.RedisCacheUtil;
 import lombok.Data;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.Before;
-import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -104,7 +98,7 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
     }
 
     @Override
-    protected boolean enabledFlowLimit() {
+    protected final boolean enabledFlowLimit(JoinPoint joinPoint) {
         return redisTemplate != null && CounterKeyProperties.counterKeys != null;
     }
 
@@ -113,7 +107,7 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
         List<String> counterKey = CounterKeyProperties.counterKeys;
         if (!enabledGlobalLimit) {
             //未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
-            counterKey = Optional.ofNullable(restructureCounterKey(counterKey))
+            counterKey = Optional.ofNullable(restructureCounterKey(joinPoint, counterKey))
                     .orElse(counterKey);
         }
         List<Long> counterHoldingTime = CounterKeyProperties.counterHoldingTime;
@@ -131,7 +125,7 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
     /**
      * 重构计数器的key，未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
      */
-    protected abstract List<String> restructureCounterKey(List<String> counterKey);
+    protected abstract List<String> restructureCounterKey(JoinPoint joinPoint, List<String> counterKey);
 
     private static final String LUA_INC_SCRIPT_TEXT =
             " local setSuccess = redis.call('set',KEYS[1],1,'ex',ARGV[1],'nx');" +

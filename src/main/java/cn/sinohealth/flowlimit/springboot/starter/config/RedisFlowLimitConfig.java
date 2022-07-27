@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 import java.util.Random;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -25,6 +24,11 @@ public class RedisFlowLimitConfig extends RedisFlowLimitAspect {
     }
 
     @Override
+    protected boolean filterRequest(JoinPoint joinPoint) {
+        return false;
+    }
+
+    @Override
     protected boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint joinPoint) {
         return false;
     }
@@ -36,7 +40,7 @@ public class RedisFlowLimitConfig extends RedisFlowLimitAspect {
 
 
     @Override
-    protected List<String> restructureCounterKey(List<String> counterKey) {
+    protected List<String> restructureCounterKey(JoinPoint joinPoint, List<String> counterKey) {
         Random random = new Random();
         int i = random.nextInt(999999999);
         return counterKey.stream().map(key -> key + i).collect(Collectors.toList());

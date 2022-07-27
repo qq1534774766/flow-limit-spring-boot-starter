@@ -2,9 +2,7 @@ package cn.sinohealth.flowlimit.springboot.starter.service.aspect;
 
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
-import org.aspectj.lang.annotation.Pointcut;
 
 /**
  * @Author: wenqiaogang
@@ -34,13 +32,20 @@ public abstract class AbstractFlowLimitAspect {
      *
      * @return true 开启，false  未开启
      */
-    protected abstract boolean enabledFlowLimit();
+    protected abstract boolean enabledFlowLimit(JoinPoint joinPoint);
+
+    /**
+     * 过滤不进行限制的请求，比如登录注册、文件下载、静态资源等
+     *
+     * @return true:表示过滤该请求，即不限制该请求，false限制该请求
+     */
+    protected abstract boolean filterRequest(JoinPoint joinPoint);
 
     /**
      * 定义模板方法，禁止子类重写方法
      */
     protected final Object flowLimitProcess(JoinPoint joinPoint) throws Throwable {
-        if (!enabledFlowLimit()) {
+        if (!enabledFlowLimit(joinPoint) && filterRequest(joinPoint)) {
             //其他操作，如验证通过重置限制计数器等。最后返回执行结果
             return otherHandle(joinPoint, false, null);
         }
