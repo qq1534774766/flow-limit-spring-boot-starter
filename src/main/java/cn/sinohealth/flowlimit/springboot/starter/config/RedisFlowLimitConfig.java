@@ -7,6 +7,9 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
+import java.util.Random;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @Author: wenqiaogang
@@ -34,6 +37,8 @@ public class RedisFlowLimitConfig extends RedisFlowLimitAspect {
 
     @Override
     protected List<String> restructureCounterKey(List<String> counterKey) {
-        return null;
+        Random random = new Random();
+        int i = random.nextInt(999999999);
+        return counterKey.stream().map(key -> key + i).collect(Collectors.toList());
     }
 }

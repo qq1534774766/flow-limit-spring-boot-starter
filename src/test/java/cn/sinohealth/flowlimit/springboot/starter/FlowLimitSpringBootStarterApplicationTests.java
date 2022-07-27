@@ -2,8 +2,7 @@ package cn.sinohealth.flowlimit.springboot.starter;
 
 import cn.sinohealth.flowlimit.springboot.starter.utils.RedisCacheUtil;
 import org.junit.jupiter.api.Test;
-//import cn.sinohealth.flowlimit.springboot.starter.service.aspect.impl.RedisFlowLimitAspect;
-import org.redisson.api.RedissonClient;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -24,11 +23,16 @@ class FlowLimitSpringBootStarterApplicationTests {
     @Autowired
     public RedisTemplate<String, Object> redisTemplate;
 
-    @Autowired
-    RedissonClient redissonClient;
 
     @Test
     void contextLoads() throws Throwable {
+        String key = "k2";
+        String LUA_INC_SCRIPT_TEXT = "return 3";
+        DefaultRedisScript<Long> REDIS_INC_SCRIPT = new DefaultRedisScript<>(LUA_INC_SCRIPT_TEXT, Long.class);
+        ArrayList<String> strings = new ArrayList<>();
+        strings.add(key);
+        Long execute = redisTemplate.execute(REDIS_INC_SCRIPT, strings, 100);
+        System.out.println(execute);
 
     }
 

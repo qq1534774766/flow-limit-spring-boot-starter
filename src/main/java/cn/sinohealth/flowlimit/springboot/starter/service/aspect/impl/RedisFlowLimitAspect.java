@@ -136,17 +136,17 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
     private static final String LUA_INC_SCRIPT_TEXT =
             " local setSuccess = redis.call('set',KEYS[1],1,'ex',ARGV[1],'nx');" +
                     " if(type(setSuccess)=='table') then" +
-                    " return -1;" +
+                    " return 1;" +
                     " else" +
                     " redis.call('incr',KEYS[1]);" +
                     " local keyTtl = redis.call('ttl',KEYS[1]);" +
                     " if(keyTtl==-1) then" +
                     " redis.call('set',KEYS[1],1,'ex',ARGV[1],'xx');" +
-                    " return -2;" +
+                    " return 2;" +
                     " end" +
                     " end" +
-                    " return redis.call('get',KEYS[1]);";
-    private static final DefaultRedisScript<Object> REDIS_INC_SCRIPT = new DefaultRedisScript<>(LUA_INC_SCRIPT_TEXT, Object.class);
+                    " return 3;";
+    private static final DefaultRedisScript<Long> REDIS_INC_SCRIPT = new DefaultRedisScript<>(LUA_INC_SCRIPT_TEXT, Long.class);
 
     /**
      * 对key进行细粒的操作,即计数器自增
@@ -158,12 +158,16 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
      * @return ture 当前key的计数器超出限制，禁止访问
      */
     private boolean counterProcess(String key, long timeout, Integer countMax) {
-        Object result = redisTemplate.execute(REDIS_INC_SCRIPT, Collections.singletonList(key), timeout);
-        //设置key成功:-1
-        // 原来的key自增失败，重设新的key:-2
-        // key自增成功，key的值
-        return Integer.parseInt(String.valueOf(result)) > countMax;
-//        return false;
+        Long result = redisTemplate.execute(REDIS_INC_SCRIPT, Collections.singletonList(key), timeout);
+        //设置key成功: 1
+        // 原来的key自增失败，重设新的key: 2
+        // key自增成功: 3
+        long aLong = Optional.ofNullable(result).orElse(-1L);
+        if (aLong == 1 || aLong == 2) {
+            return false;
+        }
+        Integer alreadyCount = (Integer) redisTemplate.opsForValue().get(key);
+        return !ObjectUtils.isNotEmpty(alreadyCount) || alreadyCount > countMax;
     }
 
 
