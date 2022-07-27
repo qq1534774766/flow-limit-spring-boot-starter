@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @Description: TODO
  */
 @RestController
-public class Cont {
+public class TestController {
     /**
      * adsad
      *
@@ -17,6 +17,6 @@ public class Cont {
      */
     @RequestMapping("/")
     public String index() {
-        return "123321312";
+        return "{'code':200,'data':null}";
     }
 }

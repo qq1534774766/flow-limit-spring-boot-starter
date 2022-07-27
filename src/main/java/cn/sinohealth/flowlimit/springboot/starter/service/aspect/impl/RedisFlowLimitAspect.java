@@ -13,6 +13,7 @@ import javax.annotation.PostConstruct;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -104,10 +105,19 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
     @Override
     protected final boolean limitProcess(JoinPoint joinPoint) throws Throwable {
         List<String> counterKey = CounterKeyProperties.counterKeys;
+//        if (!enabledGlobalLimit) {
+//            //未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
+//            counterKey = Optional.ofNullable(restructureCounterKey(joinPoint, counterKey))
+//                    .orElse(counterKey);
+//        }
         if (!enabledGlobalLimit) {
             //未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
-            counterKey = Optional.ofNullable(restructureCounterKey(joinPoint, counterKey))
-                    .orElse(counterKey);
+            counterKey = counterKey.stream()
+                    .map(key ->
+                            key.concat(Optional
+                                    .ofNullable(appendCounterKeyWithUserId(joinPoint))
+                                    .orElse("")))
+                    .collect(Collectors.toList());
         }
         List<Long> counterHoldingTime = CounterKeyProperties.counterHoldingTime;
         List<Integer> counterLimitNumber = CounterKeyProperties.counterLimitNumber;
@@ -122,9 +132,20 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
     }
 
     /**
-     * 重构计数器的key，未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
+     *
+     * @param joinPoint
+     * @param counterKey application.yaml配置的key
+     * @return
      */
-    protected abstract List<String> restructureCounterKey(JoinPoint joinPoint, List<String> counterKey);
+//    protected abstract List<String> restructureCounterKey(JoinPoint joinPoint, List<String> counterKey);
+
+    /**
+     * 重构计数器的key，未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
+     *
+     * @param joinPoint
+     * @return 重构逻辑
+     */
+    protected abstract String appendCounterKeyWithUserId(JoinPoint joinPoint);
 
     private static final String LUA_INC_SCRIPT_TEXT =
             " local setSuccess = redis.call('set',KEYS[1],1,'ex',ARGV[1],'nx');" +

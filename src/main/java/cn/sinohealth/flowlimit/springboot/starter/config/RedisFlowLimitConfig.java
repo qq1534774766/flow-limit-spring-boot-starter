@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 import java.util.Random;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -19,7 +20,7 @@ import java.util.stream.Collectors;
 @Aspect
 public class RedisFlowLimitConfig extends RedisFlowLimitAspect {
 
-    @Pointcut("within(cn.sinohealth.flowlimit.springboot.starter.Cont)" +
+    @Pointcut("within(cn.sinohealth.flowlimit.springboot.starter.TestController)" +
             "&&@annotation(org.springframework.web.bind.annotation.RequestMapping)")
     protected void pointcut() {
     }
@@ -41,9 +42,7 @@ public class RedisFlowLimitConfig extends RedisFlowLimitAspect {
 
 
     @Override
-    protected List<String> restructureCounterKey(JoinPoint joinPoint, List<String> counterKey) {
-        Random random = new Random();
-        int i = random.nextInt(999999999);
-        return counterKey.stream().map(key -> key + i).collect(Collectors.toList());
+    protected String appendCounterKeyWithUserId(JoinPoint joinPoint) {
+        return null;
     }
 }
