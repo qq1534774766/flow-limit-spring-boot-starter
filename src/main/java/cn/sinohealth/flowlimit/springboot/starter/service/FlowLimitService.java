@@ -8,7 +8,6 @@ import lombok.Data;
  * @DateTime: 2022/7/26 14:14
  * @Description: TODO
  */
-@Data
 public class FlowLimitService {
     private FlowLimitProperties flowLimitProperties;
 
@@ -21,4 +20,11 @@ public class FlowLimitService {
 
     }
 
+    public FlowLimitProperties getFlowLimitProperties() {
+        return flowLimitProperties;
+    }
+
+    public void setFlowLimitProperties(FlowLimitProperties flowLimitProperties) {
+        this.flowLimitProperties = flowLimitProperties;
+    }
 }

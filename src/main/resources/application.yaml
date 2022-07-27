@@ -2,6 +2,15 @@
 spring:
   application:
     name: flow-limit-spring-boot-starter
+  redis:
+    host: 192.168.16.87
+    port: 6379
+    #    password: zkredis
+    jedis:
+      pool:
+        min-idle: 0
+        max-idle: 8
+        max-active: 8
 
 flowlimit:
   enabled: true
@@ -10,10 +19,10 @@ flowlimit:
     enabled-sync-count: false
     prefix-key: "icecream::innovative-medicine:desktop-web:"
     counter-keys:
-      - "counter:1:second:"
-      - "counter:2:minutes:"
-      - "counter:5:minutes:"
-      - "counter:1:hour:"
+      - "counter:1:second11:"
+      - "counter:2:minutes11:"
+      - "counter:5:minutes11:"
+      - "counter:1:hour11:"
     counter-holding-time:
       - 1000
       - 180000
@@ -24,5 +33,4 @@ flowlimit:
       - 80
       - 320
       - 240000
-
 

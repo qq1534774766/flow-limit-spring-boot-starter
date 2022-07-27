@@ -8,7 +8,6 @@ import lombok.Data;
  * @DateTime: 2022/7/26 14:32
  * @Description: TODO
  */
-@Data
 public class RedisFlowLimitService {
 
     private FlowLimitProperties.RedisLimitFlowAspectProperties redisLimitFlowAspectProperties;
@@ -22,5 +21,13 @@ public class RedisFlowLimitService {
         if (!(size1 == size2 && size1 == size3)) {
             throw new IllegalArgumentException("redis的key数量与配置值数量不一致！");
         }
+    }
+
+    public FlowLimitProperties.RedisLimitFlowAspectProperties getRedisLimitFlowAspectProperties() {
+        return redisLimitFlowAspectProperties;
+    }
+
+    public void setRedisLimitFlowAspectProperties(FlowLimitProperties.RedisLimitFlowAspectProperties redisLimitFlowAspectProperties) {
+        this.redisLimitFlowAspectProperties = redisLimitFlowAspectProperties;
     }
 }

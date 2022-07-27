@@ -6,7 +6,7 @@ import cn.sinohealth.flowlimit.springboot.starter.utils.RedisCacheUtil;
 import lombok.Data;
 import org.apache.commons.lang3.ObjectUtils;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
@@ -21,10 +21,12 @@ import java.util.stream.Collectors;
  * @Description: Redis数据源，计数器的方式限流。排除未登录用户
  */
 @Component
-//@Aspect
+@Data
 @ConditionalOnBean({RedisCacheUtil.class, RedisFlowLimitService.class})
 public abstract class RedisLimitFlowAspect extends AbstractLimitFlowAspect {
-    private final RedisCacheUtil redisCacheUtil;
+
+    private RedisCacheUtil redisCacheUtil;
+
 
     /**
      * 是否开启同步计数，如不要求精准限流，则无需开启。
@@ -86,10 +88,18 @@ public abstract class RedisLimitFlowAspect extends AbstractLimitFlowAspect {
      */
     public static final String OVERSTEP_FLOW_VERIFICATION = "overstep:flow:verification";
 
+    public RedisLimitFlowAspect() {
+
+    }
+
     @Autowired
-    public RedisLimitFlowAspect(RedisFlowLimitService redisFlowLimitService, RedisCacheUtil redisCacheUtil) {
+    public void setRedisCacheUtil(RedisCacheUtil redisCacheUtil) {
         this.redisCacheUtil = redisCacheUtil;
-        //封装其他属性
+    }
+
+    @Autowired
+    public void setRedisFlowLimitService(RedisFlowLimitService redisFlowLimitService) {
+        //封装公共属性
         this.enabledGlobalLimit = redisFlowLimitService.getRedisLimitFlowAspectProperties().isEnabledGlobalLimit();
         this.enabledSyncCount = redisFlowLimitService.getRedisLimitFlowAspectProperties().isEnabledSyncCount();
         //封装properties
@@ -99,13 +109,13 @@ public abstract class RedisLimitFlowAspect extends AbstractLimitFlowAspect {
         CounterKeyProperties.counterHoldingTime = redisFlowLimitService.getRedisLimitFlowAspectProperties().getCounterHoldingTime();
         CounterKeyProperties.counterLimitNumber = redisFlowLimitService.getRedisLimitFlowAspectProperties().getCounterLimitNumber();
         CounterKeyProperties.keyNumber = redisFlowLimitService.getRedisLimitFlowAspectProperties().getCounterKeys().size();
-
     }
 
     /**
      * 定义切入点
      */
     @Override
+    @Pointcut()
     protected abstract void pointcut();
 
 
@@ -151,10 +161,11 @@ public abstract class RedisLimitFlowAspect extends AbstractLimitFlowAspect {
      * @return ture 当前key的计数器超出限制，禁止访问
      */
     private boolean counterProcess(String key, long timeout, Integer countMax) {
-        boolean success = redisCacheUtil.setCacheObjectIfAbsent(key, 1, timeout, CounterKeyProperties.HOLDING_TIME_UNIT);
+        boolean success = redisCacheUtil.setCacheObjectIfAbsent(key, 1L, timeout, CounterKeyProperties.HOLDING_TIME_UNIT);
         if (!success) {
             //key已经存在，获取当前计数
-            Integer alreadyCount = Integer.valueOf(redisCacheUtil.getCacheObject(key));
+            Object cacheObject = redisCacheUtil.getCacheObject(key);
+            Integer alreadyCount = (Integer) cacheObject;
             if (ObjectUtils.isNotEmpty(alreadyCount) && alreadyCount >= countMax) {
                 //超出限流，限制
                 return true;
@@ -177,14 +188,15 @@ public abstract class RedisLimitFlowAspect extends AbstractLimitFlowAspect {
      * @return ture 当前key的计数器超出限制，禁止访问
      */
     private boolean counterProcessWithLock(String key, long timeout, Integer countMax, String lockKey) {
-        boolean success = redisCacheUtil.setCacheObjectIfAbsent(key, 1, timeout, CounterKeyProperties.HOLDING_TIME_UNIT);
+        boolean success = redisCacheUtil.setCacheObjectIfAbsent(key, 1L, timeout, CounterKeyProperties.HOLDING_TIME_UNIT);
         if (!success) {
             //key已经存在，获取当前计数
             //加锁
             while (true) {
-                Boolean lock = redisCacheUtil.setCacheObjectIfAbsent(lockKey, 1, 100L, TimeUnit.MILLISECONDS);
+                Boolean lock = redisCacheUtil.setCacheObjectIfAbsent(lockKey, 1L, 100L, TimeUnit.MILLISECONDS);
                 if (lock) {
-                    Integer alreadyCount = Integer.valueOf(redisCacheUtil.getCacheObject(key));
+                    Object cacheObject = redisCacheUtil.getCacheObject(key);
+                    Integer alreadyCount = (Integer) cacheObject;
                     if (ObjectUtils.isNotEmpty(alreadyCount) && alreadyCount >= countMax) {
                         //超出限流，限制
                         redisCacheUtil.deleteObject(lockKey);

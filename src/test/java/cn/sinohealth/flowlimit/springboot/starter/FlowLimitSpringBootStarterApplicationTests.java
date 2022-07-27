@@ -1,20 +1,31 @@
 package cn.sinohealth.flowlimit.springboot.starter;
 
 import cn.sinohealth.flowlimit.springboot.starter.service.aspect.impl.RedisLimitFlowAspect;
+import cn.sinohealth.flowlimit.springboot.starter.utils.RedisCacheUtil;
 import org.junit.jupiter.api.Test;
 //import cn.sinohealth.flowlimit.springboot.starter.service.aspect.impl.RedisLimitFlowAspect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
+
+import java.util.concurrent.TimeUnit;
 
 @SpringBootTest
 class FlowLimitSpringBootStarterApplicationTests {
 
     @Autowired
-    private RedisLimitFlowAspect redisLimitFlowAspect;
+    private RedisCacheUtil redisCacheUtil;
+
+    @Autowired
+    public RedisTemplate<String, Object> redisTemplate;
 
     @Test
     void contextLoads() {
-        System.out.println(redisLimitFlowAspect);
+        String key = "key1211109";
+        redisTemplate.opsForValue().set(key, 1, 10L, TimeUnit.SECONDS);
+
+        redisTemplate.opsForValue().increment(key);
+
     }
 
 }

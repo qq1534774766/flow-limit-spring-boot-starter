@@ -1,2 +1,2 @@
 #-------starter自动装配---------
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=cn.sinohealth.flowlimit.springboot.starter.config.FlowLimitConfig
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=cn.sinohealth.flowlimit.springboot.starter.config.FlowLimitAutoConfig

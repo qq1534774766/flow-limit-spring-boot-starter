@@ -22,11 +22,11 @@ public class FlowLimitProperties {
      * 是否启用流量限制
      */
     private boolean enabled = false;
+
     private RedisLimitFlowAspectProperties redisLimitFlowAspect;
 
     @Data
     @ConditionalOnClass(RedisTemplate.class)
-    @ConditionalOnProperty(prefix = "flowlimit.redis-limit-flow-aspect", name = "flowlimit.redis-limit-flow-aspect")
     public static class RedisLimitFlowAspectProperties {
         /**
          * 是否开启同步计数，如不要求精准限流，则无需开启。
