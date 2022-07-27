@@ -3,7 +3,6 @@ package cn.sinohealth.flowlimit.springboot.starter.config;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
 import cn.sinohealth.flowlimit.springboot.starter.service.FlowLimitService;
 import cn.sinohealth.flowlimit.springboot.starter.service.RedisFlowLimitService;
-import cn.sinohealth.flowlimit.springboot.starter.utils.RedisCacheUtil;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -32,10 +31,6 @@ abstract class FlowLimitConfiguration {
     @Configuration
     @AutoConfigureAfter({RedisAutoConfiguration.class})
     static class RedisFlowLimitConfiguration {
-        @Bean
-        public RedisCacheUtil redisCacheUtil(RedisTemplate<String, Object> redisTemplate) {
-            return new RedisCacheUtil(redisTemplate);
-        }
 
         @Bean
         @ConditionalOnProperty(prefix = "flowlimit", name = "redis-flow-limit-aspect-properties.prefix-key")
@@ -43,5 +38,6 @@ abstract class FlowLimitConfiguration {
         public RedisFlowLimitService redisFlowLimitService(FlowLimitService flowLimitService) {
             return new RedisFlowLimitService(flowLimitService);
         }
+
     }
 }

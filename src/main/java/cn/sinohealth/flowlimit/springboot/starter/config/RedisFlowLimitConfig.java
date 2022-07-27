@@ -19,7 +19,8 @@ import java.util.stream.Collectors;
 @Aspect
 public class RedisFlowLimitConfig extends RedisFlowLimitAspect {
 
-    @Pointcut("within(cn.sinohealth.flowlimit.springboot.starter.Cont)&&@annotation(org.springframework.web.bind.annotation.RequestMapping)")
+    @Pointcut("within(cn.sinohealth.flowlimit.springboot.starter.Cont)" +
+            "&&@annotation(org.springframework.web.bind.annotation.RequestMapping)")
     protected void pointcut() {
     }
 

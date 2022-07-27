@@ -12,6 +12,11 @@ import org.aspectj.lang.annotation.Before;
  */
 public abstract class AbstractFlowLimitAspect {
     /**
+     * 是否启用流量限制
+     */
+    protected static boolean enabled;
+
+    /**
      * 定义切入点，子类必须重写并指定连接点
      */
     protected abstract void pointcut();
@@ -26,14 +31,6 @@ public abstract class AbstractFlowLimitAspect {
         return flowLimitProcess(joinPoint);
     }
 
-
-    /**
-     * 是否开启流量限制
-     *
-     * @return true 开启，false  未开启
-     */
-    protected abstract boolean enabledFlowLimit(JoinPoint joinPoint);
-
     /**
      * 过滤不进行限制的请求，比如登录注册、文件下载、静态资源等
      *
@@ -45,17 +42,25 @@ public abstract class AbstractFlowLimitAspect {
      * 定义模板方法，禁止子类重写方法
      */
     protected final Object flowLimitProcess(JoinPoint joinPoint) throws Throwable {
-        if (!enabledFlowLimit(joinPoint) && filterRequest(joinPoint)) {
-            //其他操作，如验证通过重置限制计数器等。最后返回执行结果
+        if (!enabled) {
+            return otherHandle(joinPoint, false, null);
+        }
+        if (filterRequest(joinPoint)) {
             return otherHandle(joinPoint, false, null);
         }
         //限流逻辑
-        boolean isReject = limitProcess(joinPoint);
         Object rejectResult = null;
-        //被限流
-        if (isReject && !beforeLimitingHappenWhetherContinueLimit(joinPoint)) {
-            //调拒绝策略
-            rejectResult = rejectHandle(joinPoint);
+        boolean isReject = false;
+        //1.限流计数器计数。
+        if (limitProcess(joinPoint)) {
+            // 2.限流前置操作
+            if (beforeLimitingHappenWhetherContinueLimit(joinPoint)) {
+                resetLimiter(joinPoint);
+            } else {
+                //执行拒绝策略
+                isReject = true;
+                rejectResult = rejectHandle(joinPoint);
+            }
         }
         //其他操作，如验证通过重置限制计数器等。最后返回执行结果
         return otherHandle(joinPoint, isReject, rejectResult);
@@ -65,16 +70,16 @@ public abstract class AbstractFlowLimitAspect {
     /**
      * 限流逻辑，如计数器方法、漏桶法、令牌桶等。
      *
-     * @return true:当前请求被限制,即被拒绝。
+     * @return true:当前请求达到计数器上限。
      */
     protected abstract boolean limitProcess(JoinPoint joinPoint) throws Throwable;
 
     /**
      * 在限制发生之前是否继续限制
      * <br/>
-     * 可以实现滑动验证码，手机验证码登录验证操作。
+     * 可以反馈客户端滑动验证码，手机验证码登录验证操作。
      *
-     * @return TRUE：完成验证->清空计数器->放行。FALSE：未完成验证，执行拒绝策略。
+     * @return TRUE：用户完成验证->清空计数器->放行。FALSE：未完成验证，执行拒绝策略。
      */
     protected abstract boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint joinPoint);
 

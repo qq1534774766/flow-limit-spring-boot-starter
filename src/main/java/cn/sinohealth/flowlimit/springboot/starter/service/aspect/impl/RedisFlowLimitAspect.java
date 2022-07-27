@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 
+import javax.annotation.PostConstruct;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -23,8 +24,6 @@ import java.util.stream.Collectors;
 public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
 
     private RedisTemplate<String, Object> redisTemplate;
-
-
 
     /**
      * 是否全局限制，即所有用户所有操作均被计数限制.
@@ -97,9 +96,9 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
         CounterKeyProperties.keyNumber = redisFlowLimitService.getRedisLimitFlowAspectProperties().getCounterKeys().size();
     }
 
-    @Override
-    protected final boolean enabledFlowLimit(JoinPoint joinPoint) {
-        return redisTemplate != null && CounterKeyProperties.counterKeys != null;
+    @PostConstruct
+    public void initBeanProperties() {
+        enabled = redisTemplate != null && CounterKeyProperties.counterKeys != null;
     }
 
     @Override
@@ -156,15 +155,13 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
         //设置key成功: 1
         // 原来的key自增失败，重设新的key: 2
         // key自增成功: 3
-        long aLong = Optional.ofNullable(result).orElse(-1L);
-        if (aLong == 1 || aLong == 2) {
+        if (Optional.ofNullable(result).orElse(-1L) < 3) {
             return false;
         }
-        Integer alreadyCount = (Integer) redisTemplate.opsForValue().get(key);
-        return !ObjectUtils.isNotEmpty(alreadyCount) || alreadyCount > countMax;
+        return Optional.ofNullable((Integer) redisTemplate.opsForValue().get(key))
+                .map(alreadyCount -> alreadyCount > countMax)
+                .orElse(false);
     }
-
-
 
 
     /**
