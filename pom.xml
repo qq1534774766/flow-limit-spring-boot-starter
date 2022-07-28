@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>cn.sinohealth</groupId>
     <artifactId>flow-limit-spring-boot-starter</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0.RELEASE</version>
     <name>flow-limit-spring-boot-starter</name>
     <description>flow-limit-spring-boot-starter</description>
 
@@ -95,6 +95,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>2.3.7.RELEASE</version>
                 <configuration>
+                    <skip>true</skip>
                     <mainClass>cn.sinohealth.flowlimit.springboot.starter.FlowLimitSpringBootStarterApplication
                     </mainClass>
                 </configuration>

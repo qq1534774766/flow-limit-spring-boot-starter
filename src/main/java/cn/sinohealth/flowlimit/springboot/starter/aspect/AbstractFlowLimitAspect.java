@@ -17,11 +17,6 @@ public abstract class AbstractFlowLimitAspect implements IFlowLimitAspect {
      */
     protected static boolean enabled;
 
-    /**
-     * 定义切入点，子类<strong>必须</strong>重写并指定连接点
-     */
-    public void pointcut() {
-    }
 
     /**
      * 定义增强方式，默认使用环绕增强

@@ -1,11 +1,9 @@
-package cn.sinohealth.flowlimit.springboot.starter.config;
+package cn.sinohealth.flowlimit.springboot.starter.test;
 
-import cn.sinohealth.flowlimit.springboot.starter.Result;
+import cn.sinohealth.flowlimit.springboot.starter.test.Result;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.impl.RedisFlowLimitAspectImpl;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
-import org.springframework.context.annotation.Configuration;
 
 import java.util.Random;
 
@@ -14,11 +12,11 @@ import java.util.Random;
  * @DateTime: 2022/7/26 17:56
  * @Description: TODO
  */
-@Configuration
-@Aspect
-public class RedisFlowLimitConfig extends RedisFlowLimitAspectImpl {
+//@Configuration
+//@Aspect
+public final class RedisFlowLimitConfig extends RedisFlowLimitAspectImpl {
 
-    @Pointcut("within(cn.sinohealth.flowlimit.springboot.starter.TestController)" +
+    @Pointcut("within(cn.sinohealth.flowlimit.springboot.starter.test.TestController)" +
             "&&@annotation(org.springframework.web.bind.annotation.RequestMapping)")
     public void pointcut() {
     }

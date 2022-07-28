@@ -1,4 +1,4 @@
-package cn.sinohealth.flowlimit.springboot.starter;
+package cn.sinohealth.flowlimit.springboot.starter.test;
 
 import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimit;
 import lombok.AllArgsConstructor;
@@ -7,7 +7,7 @@ import org.aspectj.lang.JoinPoint;
 
 @Data
 @AllArgsConstructor
-public class Result {
+public final class Result {
     private Integer code;
     private Object data;
 
