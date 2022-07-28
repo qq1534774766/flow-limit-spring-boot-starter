@@ -11,7 +11,7 @@ import org.aspectj.lang.annotation.Before;
  * @Description: 限流、反爬抽象类。 《模板方法模式》，子类可以继承该类，以实现不同的限制策略
  * <br/>
  */
-public abstract class AbstractFlowLimitAspect {
+public abstract class AbstractFlowLimitAspect implements IFlowLimit {
     /**
      * 是否启用流量限制
      */
@@ -67,13 +67,6 @@ public abstract class AbstractFlowLimitAspect {
         return otherHandle(joinPoint, isReject, rejectResult);
     }
 
-
-    /**
-     * 限流逻辑，如计数器方法、漏桶法、令牌桶等。
-     *
-     * @return true:当前请求达到计数器上限。
-     */
-    protected abstract boolean limitProcess(JoinPoint joinPoint) throws Throwable;
 
     /**
      * 在限制发生之前是否继续限制

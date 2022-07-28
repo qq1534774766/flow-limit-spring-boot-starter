@@ -1,5 +1,6 @@
 package cn.sinohealth.flowlimit.springboot.starter.aspect.impl;
 
+import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimit;
 import cn.sinohealth.flowlimit.springboot.starter.service.RedisFlowLimitService;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractFlowLimitAspect;
 import lombok.Data;
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
  * @Description: Redis数据源，计数器的方式限流。排除未登录用户
  */
 @Data
-public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
+public abstract class RedisFlowLimitAspectImpl extends AbstractFlowLimitAspect {
 
     private RedisTemplate<String, Object> redisTemplate;
 
@@ -73,7 +74,7 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
      */
     public static final String OVERSTEP_FLOW_VERIFICATION = "overstep:flow:verification";
 
-    public RedisFlowLimitAspect() {
+    public RedisFlowLimitAspectImpl() {
 
     }
 
@@ -101,7 +102,7 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
     }
 
     @Override
-    protected final boolean limitProcess(JoinPoint joinPoint) throws Throwable {
+    public final boolean limitProcess(JoinPoint joinPoint) {
         List<String> counterKey = CounterKeyProperties.counterKeys;
         if (!enabledGlobalLimit) {
             //未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
@@ -181,5 +182,10 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect {
             redisTemplate.delete(key);
         }
         return null;
+    }
+
+    @Override
+    public Class<? extends IFlowLimit> getStrategyClass() {
+        return RedisFlowLimitAspectImpl.class;
     }
 }

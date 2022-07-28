@@ -1,5 +1,6 @@
 package cn.sinohealth.flowlimit.springboot.starter.config;
 
+import cn.sinohealth.flowlimit.springboot.starter.aspect.impl.MysqlFlowLimitAspectImpl;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
 import cn.sinohealth.flowlimit.springboot.starter.service.FlowLimitService;
 import cn.sinohealth.flowlimit.springboot.starter.service.RedisFlowLimitService;
@@ -9,7 +10,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.core.RedisTemplate;
 
 /**
  * @Author: wenqiaogang
@@ -36,8 +36,16 @@ abstract class FlowLimitConfiguration {
         @ConditionalOnProperty(prefix = "flowlimit", name = "redis-flow-limit-aspect-properties.prefix-key")
         @ConditionalOnBean(FlowLimitService.class)
         public RedisFlowLimitService redisFlowLimitService(FlowLimitService flowLimitService) {
-            return new RedisFlowLimitService(flowLimitService);
+            return new RedisFlowLimitService(flowLimitService.getFlowLimitProperties().getRedisFlowLimitAspectProperties());
         }
+    }
 
+    @Configuration
+    static class MysqlFlowLimitConfiguration {
+        @Bean
+        @ConditionalOnBean(FlowLimitService.class)
+        public MysqlFlowLimitAspectImpl mysqlFlowLimitAspect(FlowLimitProperties flowLimitProperties) {
+            return new MysqlFlowLimitAspectImpl();
+        }
     }
 }

@@ -19,6 +19,11 @@ public class FlowLimitProperties {
      * 是否启用流量限制
      */
     private boolean enabled = false;
+    /**
+     * 限流策略类型
+     */
+    private Class<?> flowLimitStrategyImplClassName;
+
 
     private RedisFlowLimitAspectProperties redisFlowLimitAspectProperties;
 
