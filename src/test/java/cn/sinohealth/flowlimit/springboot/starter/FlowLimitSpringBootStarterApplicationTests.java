@@ -39,6 +39,7 @@ class FlowLimitSpringBootStarterApplicationTests {
         redisTemplate.opsForValue().increment(key);
         Object o = redisTemplate.opsForValue().get(key);
         System.out.println(o);
+        System.out.println(o.getClass().getName());
 
 
     }

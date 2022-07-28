@@ -1,5 +1,6 @@
 package cn.sinohealth.flowlimit.springboot.starter.properties;
 
+import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimit;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -19,11 +20,16 @@ public class FlowLimitProperties {
      * 是否启用流量限制
      */
     private boolean enabled = false;
+    /**
+     * 限流策略类型
+     */
+    private Class<? extends IFlowLimit> flowLimitStrategyImplClass;
 
-    private RedisFlowLimitAspectProperties redisFlowLimitAspectProperties;
+
+    private RedisFlowLimitProperties redisFlowLimitProperties;
 
     @Data
-    public static class RedisFlowLimitAspectProperties {
+    public static class RedisFlowLimitProperties {
 
         /**
          * 是否全局限制，即所有用户所有操作均被计数限制.
@@ -37,7 +43,7 @@ public class FlowLimitProperties {
          * <br/>形式：
          * xxx:xxx:xxx:
          */
-        private String prefixKey;
+        private String prefixKey = "必须在application.yaml中配置本属性，否则表示未启动redis限流功能";
 
         /**
          * 每个计数器的Key
