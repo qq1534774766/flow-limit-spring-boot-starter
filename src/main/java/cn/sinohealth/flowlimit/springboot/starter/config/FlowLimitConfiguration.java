@@ -1,11 +1,7 @@
 package cn.sinohealth.flowlimit.springboot.starter.config;
 
-import cn.sinohealth.flowlimit.springboot.starter.FlowLimitConfigurer;
-import cn.sinohealth.flowlimit.springboot.starter.FlowLimitStrategyFactory;
-import cn.sinohealth.flowlimit.springboot.starter.aspect.impl.MysqlFlowLimitAspectImpl;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -22,23 +18,11 @@ abstract class FlowLimitConfiguration {
     @Configuration
     @ConditionalOnProperty(prefix = "flowlimit", value = {"enabled"}, havingValue = "true")
     static class BaseFlowLimitConfiguration {
-        @Bean
-        public FlowLimitStrategyFactory flowLimitStrategyFactory() {
-            return new FlowLimitStrategyFactory();
-        }
 
-        @Bean
-        public FlowLimitConfigurer flowLimitConfigurer(FlowLimitProperties flowLimitProperties,
-                                                       FlowLimitStrategyFactory flowLimitStrategyFactory) {
-            FlowLimitConfigurer.flowLimitStrategyImplClassName = flowLimitProperties.getFlowLimitStrategyImplClass();
-            FlowLimitConfigurer.flowLimitStrategyFactory = flowLimitStrategyFactory;
-            return new FlowLimitConfigurer();
-        }
     }
 
     @Configuration
     @AutoConfigureAfter({RedisAutoConfiguration.class})
-    @ConditionalOnBean(FlowLimitStrategyFactory.class)
     static class RedisFlowLimitConfiguration {
 
         @Bean
@@ -59,11 +43,6 @@ abstract class FlowLimitConfiguration {
     }
 
     @Configuration
-    @ConditionalOnBean(FlowLimitStrategyFactory.class)
     static class MysqlFlowLimitConfiguration {
-//        @Bean
-//        public MysqlFlowLimitAspectImpl mysqlFlowLimitAspect(FlowLimitProperties flowLimitProperties) {
-//            return new MysqlFlowLimitAspectImpl();
-//        }
     }
 }
