@@ -1,13 +1,15 @@
 package cn.sinohealth.flowlimit.springboot.starter.aspect.impl;
 
 import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimit;
-import cn.sinohealth.flowlimit.springboot.starter.service.RedisFlowLimitService;
+import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimitAspect;
+import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractFlowLimitAspect;
 import lombok.Data;
 import org.aspectj.lang.JoinPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.util.Collections;
@@ -21,7 +23,8 @@ import java.util.stream.Collectors;
  * @Description: Redis数据源，计数器的方式限流。排除未登录用户
  */
 @Data
-public abstract class RedisFlowLimitAspectImpl extends AbstractFlowLimitAspect {
+public abstract class RedisFlowLimitAspectImpl extends AbstractFlowLimitAspect
+        implements IFlowLimitAspect {
 
     private RedisTemplate<String, Object> redisTemplate;
 
@@ -84,21 +87,21 @@ public abstract class RedisFlowLimitAspectImpl extends AbstractFlowLimitAspect {
     }
 
     @Autowired(required = false)
-    public void setRedisFlowLimitService(RedisFlowLimitService redisFlowLimitService) {
+    public void setCounterKeyProperties(FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitProperties) {
         //封装公共属性
-        this.enabledGlobalLimit = redisFlowLimitService.getRedisLimitFlowAspectProperties().isEnabledGlobalLimit();
+        this.enabledGlobalLimit = redisFlowLimitProperties.isEnabledGlobalLimit();
         //封装properties
-        CounterKeyProperties.prefixKey = redisFlowLimitService.getRedisLimitFlowAspectProperties().getPrefixKey();
-        CounterKeyProperties.counterKeys = redisFlowLimitService.getRedisLimitFlowAspectProperties().getCounterKeys().stream()
+        CounterKeyProperties.prefixKey = redisFlowLimitProperties.getPrefixKey();
+        CounterKeyProperties.counterKeys = redisFlowLimitProperties.getCounterKeys().stream()
                 .map(key -> CounterKeyProperties.prefixKey + key).collect(Collectors.toList());
-        CounterKeyProperties.counterHoldingTime = redisFlowLimitService.getRedisLimitFlowAspectProperties().getCounterHoldingTime();
-        CounterKeyProperties.counterLimitNumber = redisFlowLimitService.getRedisLimitFlowAspectProperties().getCounterLimitNumber();
-        CounterKeyProperties.keyNumber = redisFlowLimitService.getRedisLimitFlowAspectProperties().getCounterKeys().size();
+        CounterKeyProperties.counterHoldingTime = redisFlowLimitProperties.getCounterHoldingTime();
+        CounterKeyProperties.counterLimitNumber = redisFlowLimitProperties.getCounterLimitNumber();
+        CounterKeyProperties.keyNumber = redisFlowLimitProperties.getCounterKeys().size();
     }
 
     @PostConstruct
     public void initBeanProperties() {
-        enabled = redisTemplate != null && CounterKeyProperties.counterKeys != null;
+        enabled = redisTemplate != null && !StringUtils.isEmpty(CounterKeyProperties.prefixKey);
     }
 
     @Override

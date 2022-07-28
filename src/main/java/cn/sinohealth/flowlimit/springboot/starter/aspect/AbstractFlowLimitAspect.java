@@ -11,7 +11,8 @@ import org.aspectj.lang.annotation.Before;
  * @Description: 限流、反爬抽象类。 《模板方法模式》，子类可以继承该类，以实现不同的限制策略
  * <br/>
  */
-public abstract class AbstractFlowLimitAspect implements IFlowLimit {
+public abstract class AbstractFlowLimitAspect
+        implements IFlowLimit, IFlowLimitAspect {
     /**
      * 是否启用流量限制
      */
@@ -20,7 +21,8 @@ public abstract class AbstractFlowLimitAspect implements IFlowLimit {
     /**
      * 定义切入点，子类<strong>必须</strong>重写并指定连接点
      */
-    protected abstract void pointcut();
+    public void pointcut() {
+    }
 
     /**
      * 定义增强方式，默认使用环绕增强
@@ -28,7 +30,7 @@ public abstract class AbstractFlowLimitAspect implements IFlowLimit {
      * 不建议子类重写。如需重写，则<strong>必须</strong>回调父类的 flowLimitProcess(joinPoint)方法！
      */
     @Around("pointcut()")
-    protected Object advice(JoinPoint joinPoint) throws Throwable {
+    public Object adviceMode(JoinPoint joinPoint) throws Throwable {
         return flowLimitProcess(joinPoint);
     }
 
@@ -115,7 +117,5 @@ public abstract class AbstractFlowLimitAspect implements IFlowLimit {
      * @param joinPoint 连接点
      * @return 保留返回、按需使用
      */
-    protected Object resetLimiter(JoinPoint joinPoint) {
-        return null;
-    }
+    protected abstract Object resetLimiter(JoinPoint joinPoint);
 }

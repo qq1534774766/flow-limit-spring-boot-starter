@@ -20,7 +20,7 @@ public class RedisFlowLimitConfig extends RedisFlowLimitAspectImpl {
 
     @Pointcut("within(cn.sinohealth.flowlimit.springboot.starter.TestController)" +
             "&&@annotation(org.springframework.web.bind.annotation.RequestMapping)")
-    protected void pointcut() {
+    public void pointcut() {
     }
 
     @Override

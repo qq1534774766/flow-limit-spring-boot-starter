@@ -26,8 +26,8 @@ spring:
 #    password: r08874151597
 flowlimit:
   enabled: true
-  flow-limit-strategy-impl-class-name: cn.sinohealth.flowlimit.springboot.starter.aspect.impl.RedisFlowLimitAspectImpl
-  redis-flow-limit-aspect-properties:
+  flow-limit-strategy-impl-class: cn.sinohealth.flowlimit.springboot.starter.aspect.impl.RedisFlowLimitAspectImpl
+  redis-flow-limit-properties:
     enabled-global-limit: true
     prefix-key: "icecreamtest::innovative-medicine:desktop-web:redis:flow:limit"
     counter-keys:
