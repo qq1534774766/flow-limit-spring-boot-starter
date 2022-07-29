@@ -16,10 +16,13 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -44,7 +47,8 @@ abstract class FlowLimitConfiguration {
     @ConditionalOnProperty(prefix = "flowlimit", value = {"enabled"}, havingValue = "true")
     static class RedisFlowLimitConfiguration implements ApplicationContextAware {
         @Autowired(required = false)
-        public void redisFlowLimitBootTest(FlowLimitProperties flowLimitProperties, RedisTemplate<String, Object> redisTemplate) {
+        public void redisFlowLimitBootTest(FlowLimitProperties flowLimitProperties,
+                                           RedisTemplate<String, Object> redisTemplate) {
             if (StringUtils.isEmpty(flowLimitProperties.getRedisFlowLimitProperties().getPrefixKey())) {
                 log.error("Redis流量限制器未启动：请确保application.yaml中，flowlimit->redis-flow-limit-properties->prefix-key配好");
             }

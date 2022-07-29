@@ -2,6 +2,7 @@ package cn.sinohealth.flowlimit.springboot.starter.interceptor;
 
 import cn.sinohealth.flowlimit.springboot.starter.aspect.impl.RedisFlowLimitAspect;
 import lombok.Data;
+import org.apache.commons.lang3.ObjectUtils;
 import org.aspectj.lang.JoinPoint;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,7 +53,12 @@ public abstract class RedisFlowLimitInterceptor
             RedisFlowLimitInterceptor.this.rejectHandle((HttpServletRequest) threadLocalMap.get().get("request"),
                     (HttpServletResponse) threadLocalMap.get().get("response"),
                     threadLocalMap.get().get("handler"));
-            return null;
+            return false;
+        }
+
+        @Override
+        public String appendCounterKeyWithMode() {
+            return "interceptor:";
         }
 
         @Override
@@ -64,7 +70,13 @@ public abstract class RedisFlowLimitInterceptor
 
         @Override
         protected Object otherHandle(JoinPoint joinPoint, boolean isReject, Object rejectResult) throws Throwable {
-            return true;
+            //true放行
+            if (ObjectUtils.isNotEmpty(rejectResult) && rejectResult instanceof Boolean) {
+                return rejectResult;
+            }
+            //被拒绝 isReject=true，返回false
+            //没有被拒绝
+            return !isReject;
         }
 
         @Override

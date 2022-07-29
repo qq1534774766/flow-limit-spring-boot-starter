@@ -1,39 +1,39 @@
 #应用名称
 spring:
-  application:
-    name: flow-limit-spring-boot-starter
-    redis:
-      host: 192.168.16.87
-      port: 6379
-      #    password: zkredis
-      jedis:
-        pool:
-          min-idle: 0
-          max-idle: 8
-          max-active: 8
-#  redis:
-#    jedis:
-#      pool:
-#        min-idle: 0
-#        max-idle: 8
-#        max-active: 8
-#    cluster:
-#      nodes:
-#        - 120.76.137.145:6379
-#        - 120.76.137.145:6380
-#        - 120.76.137.145:6381
-#      max-redirects: 3
-#    password: r08874151597
+#  application:
+  #    name: flow-limit-spring-boot-starter
+  #    redis:
+  #      host: 192.168.16.87
+  #      port: 6379
+  #      #    password: zkredis
+  #      jedis:
+  #        pool:
+  #          min-idle: 0
+  #          max-idle: 8
+  #          max-active: 8
+  redis:
+    jedis:
+      pool:
+        min-idle: 0
+        max-idle: 8
+        max-active: 8
+    cluster:
+      nodes:
+        - 120.76.137.145:6379
+        - 120.76.137.145:6380
+        - 120.76.137.145:6381
+      max-redirects: 3
+    password: r08874151597
 flowlimit:
   enabled: true
   redis-flow-limit-properties:
     enabled-global-limit: true
     prefix-key: "icecreamtest::innovative-medicine:desktop-web:redis:flow:limit"
-    counter-keys:
-      - "counter:second:3:"
-      - "counter:minutes:2:"
-      - "counter:minutes:5:"
-      - "counter:hour:1:"
+    #    counter-keys:
+    #      - "counter:second:3:"
+    #      - "counter:minutes:2:"
+    #      - "counter:minutes:5:"
+    #      - "counter:hour:1:"
     counter-holding-time:
       - 3
       - 180

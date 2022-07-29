@@ -33,7 +33,9 @@ public class RedisFlowLimitInterceptorConfig extends RedisFlowLimitInterceptor {
 
     @Override
     public void rejectHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        throw new Exception("拦截器拦截成功！");
+        response.setCharacterEncoding("utf-8");
+        response.getWriter().write("接口调用频繁");
+        response.setStatus(404);
     }
 
     @Override
