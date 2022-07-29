@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @Description: TODO
  */
 @RestController
-public final class TestController {
+public class TestController {
     /**
      * adsad
      *

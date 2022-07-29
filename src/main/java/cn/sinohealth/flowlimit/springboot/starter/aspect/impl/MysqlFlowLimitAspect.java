@@ -1,7 +1,6 @@
 package cn.sinohealth.flowlimit.springboot.starter.aspect.impl;
 
 import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractFlowLimitAspect;
-import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimit;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimitAspect;
 import org.aspectj.lang.JoinPoint;
 
@@ -10,7 +9,7 @@ import org.aspectj.lang.JoinPoint;
  * @DateTime: 2022/7/28 10:07
  * @Description: TODO
  */
-public abstract class MysqlFlowLimitAspectImpl extends AbstractFlowLimitAspect
+public abstract class MysqlFlowLimitAspect extends AbstractFlowLimitAspect
         implements IFlowLimitAspect {
     @Override
     public boolean limitProcess(JoinPoint joinPoint) {
@@ -18,10 +17,6 @@ public abstract class MysqlFlowLimitAspectImpl extends AbstractFlowLimitAspect
         return false;
     }
 
-    @Override
-    public Class<? extends IFlowLimit> getStrategyClass() {
-        return MysqlFlowLimitAspectImpl.class;
-    }
 
     @Override
     protected Object resetLimiter(JoinPoint joinPoint) {

@@ -1,5 +1,6 @@
 package cn.sinohealth.flowlimit.springboot.starter.aspect;
 
+import cn.sinohealth.flowlimit.springboot.starter.IFlowLimit;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Around;
 

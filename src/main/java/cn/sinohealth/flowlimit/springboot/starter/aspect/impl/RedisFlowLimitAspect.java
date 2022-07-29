@@ -1,10 +1,11 @@
 package cn.sinohealth.flowlimit.springboot.starter.aspect.impl;
 
-import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimit;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimitAspect;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractFlowLimitAspect;
 import lombok.Data;
+import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -22,8 +23,8 @@ import java.util.stream.Collectors;
  * @DateTime: 2022/7/25 10:33
  * @Description: Redis数据源，计数器的方式限流。排除未登录用户
  */
-@Data
-public abstract class RedisFlowLimitAspectImpl extends AbstractFlowLimitAspect
+@Slf4j
+public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect
         implements IFlowLimitAspect {
 
     private RedisTemplate<String, Object> redisTemplate;
@@ -77,17 +78,18 @@ public abstract class RedisFlowLimitAspectImpl extends AbstractFlowLimitAspect
      */
     public static final String OVERSTEP_FLOW_VERIFICATION = "overstep:flow:verification";
 
-    public RedisFlowLimitAspectImpl() {
+    public RedisFlowLimitAspect() {
 
     }
 
     @Autowired(required = false)
-    public void setRedisCacheUtil(RedisTemplate<String, Object> redisTemplate) {
+    public RedisFlowLimitAspect setRedisTemplate(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
+        return this;
     }
 
     @Autowired(required = false)
-    public void setCounterKeyProperties(FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitProperties) {
+    public RedisFlowLimitAspect setCounterKeyProperties(FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitProperties) {
         //封装公共属性
         this.enabledGlobalLimit = redisFlowLimitProperties.isEnabledGlobalLimit();
         //封装properties
@@ -97,12 +99,18 @@ public abstract class RedisFlowLimitAspectImpl extends AbstractFlowLimitAspect
         CounterKeyProperties.counterHoldingTime = redisFlowLimitProperties.getCounterHoldingTime();
         CounterKeyProperties.counterLimitNumber = redisFlowLimitProperties.getCounterLimitNumber();
         CounterKeyProperties.keyNumber = redisFlowLimitProperties.getCounterKeys().size();
+        return this;
     }
 
     @PostConstruct
-    public void initBeanProperties() {
-        enabled = redisTemplate != null && !StringUtils.isEmpty(CounterKeyProperties.prefixKey);
+    public RedisFlowLimitAspect initBeanProperties() {
+        setEnabled(redisTemplate != null && !StringUtils.isEmpty(CounterKeyProperties.prefixKey));
+        if (isEnabled()) {
+            log.info("Redis流量限制器启动成功！");
+        }
+        return this;
     }
+
 
     @Override
     public final boolean limitProcess(JoinPoint joinPoint) {
@@ -187,8 +195,5 @@ public abstract class RedisFlowLimitAspectImpl extends AbstractFlowLimitAspect
         return null;
     }
 
-    @Override
-    public Class<? extends IFlowLimit> getStrategyClass() {
-        return RedisFlowLimitAspectImpl.class;
-    }
+
 }

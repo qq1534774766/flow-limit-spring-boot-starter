@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>cn.sinohealth</groupId>
     <artifactId>flow-limit-spring-boot-starter</artifactId>
-    <version>1.0.0.RELEASE</version>
+    <version>1.1-SNAPSHOT</version>
     <name>flow-limit-spring-boot-starter</name>
     <description>flow-limit-spring-boot-starter</description>
 
@@ -66,6 +66,21 @@
         </dependency>
     </dependencies>
 
+    <distributionManagement>
+        <repository>
+            <!--这里的id需要和settings.xml中的server的id一致 -->
+            <id>sinohealth-nexus-release</id>
+            <name>maven-releases</name>
+            <!--releases仓库 -->
+            <url>http://192.168.16.87:8081/repository/maven-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>sinohealth-nexus-snapshots</id>
+            <name>maven-snapshots</name>
+            <!--snapshots仓库 -->
+            <url>http://192.168.16.87:8081/repository/maven-public/</url>
+        </snapshotRepository>
+    </distributionManagement>
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -109,6 +124,13 @@
                 </executions>
             </plugin>
         </plugins>
+        <sourceDirectory>src/main/java</sourceDirectory>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
     </build>
 
 </project>

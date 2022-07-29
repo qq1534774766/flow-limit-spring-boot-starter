@@ -1,5 +1,6 @@
 package cn.sinohealth.flowlimit.springboot.starter.aspect;
 
+import lombok.Data;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -11,12 +12,21 @@ import org.aspectj.lang.annotation.Before;
  * @Description: 限流、反爬抽象类。 《模板方法模式》，子类可以继承该类，以实现不同的限制策略
  * <br/>
  */
+@Data
 public abstract class AbstractFlowLimitAspect implements IFlowLimitAspect {
     /**
-     * 是否启用流量限制
+     * 流量限制控制开关，根据实现类所需要的bean决定是否能开启。
+     * 如Redis需要RedisTemplate，否则不启用流量限制
      */
-    protected static boolean enabled;
+    private boolean enabled;
 
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
 
     /**
      * 定义增强方式，默认使用环绕增强
@@ -38,7 +48,7 @@ public abstract class AbstractFlowLimitAspect implements IFlowLimitAspect {
     /**
      * 定义模板方法，禁止子类重写方法
      */
-    protected final Object flowLimitProcess(JoinPoint joinPoint) throws Throwable {
+    public final Object flowLimitProcess(JoinPoint joinPoint) throws Throwable {
         if (!enabled) {
             return otherHandle(joinPoint, false, null);
         }

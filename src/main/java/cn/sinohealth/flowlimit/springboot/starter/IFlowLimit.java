@@ -1,4 +1,4 @@
-package cn.sinohealth.flowlimit.springboot.starter.aspect;
+package cn.sinohealth.flowlimit.springboot.starter;
 
 import org.aspectj.lang.JoinPoint;
 
@@ -17,10 +17,4 @@ public interface IFlowLimit {
      */
     boolean limitProcess(JoinPoint joinPoint);
 
-    /**
-     * 当前策略之一,获取当前策略类型
-     *
-     * @return 策略具体类
-     */
-    Class<? extends IFlowLimit> getStrategyClass();
 }
