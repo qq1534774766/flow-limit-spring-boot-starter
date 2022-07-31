@@ -29,11 +29,11 @@ flowlimit:
   redis-flow-limit-properties:
     enabled-global-limit: true
     prefix-key: "icecreamtest::innovative-medicine:desktop-web:redis:flow:limit"
-    #    counter-keys:
-    #      - "counter:second:3:"
-    #      - "counter:minutes:2:"
-    #      - "counter:minutes:5:"
-    #      - "counter:hour:1:"
+    counter-keys:
+      - "counter:second:3:"
+      - "counter:minutes:2:"
+      - "counter:minutes:5:"
+      - "counter:hour:1:"
     counter-holding-time:
       - 3
       - 180

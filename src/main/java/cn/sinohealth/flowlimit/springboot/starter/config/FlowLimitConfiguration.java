@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.context.ApplicationContext;
@@ -46,31 +47,27 @@ abstract class FlowLimitConfiguration {
     @AutoConfigureAfter({RedisAutoConfiguration.class})
     @ConditionalOnProperty(prefix = "flowlimit", value = {"enabled"}, havingValue = "true")
     static class RedisFlowLimitConfiguration implements ApplicationContextAware {
-        @Autowired(required = false)
-        public void redisFlowLimitBootTest(FlowLimitProperties flowLimitProperties,
-                                           RedisTemplate<String, Object> redisTemplate) {
-            if (StringUtils.isEmpty(flowLimitProperties.getRedisFlowLimitProperties().getPrefixKey())) {
-                log.error("Redis流量限制器未启动：请确保application.yaml中，flowlimit->redis-flow-limit-properties->prefix-key配好");
-            }
+        @Autowired
+        public void redisFlowLimitBootTest(RedisTemplate<String, Object> redisTemplate) {
             if (ObjectUtils.isEmpty(redisTemplate)) {
                 log.error("Redis流量限制器未启动：RedisTemplate<String, Object> Bean 不存在");
             }
         }
 
         @Bean
-        @ConditionalOnProperty(prefix = "flowlimit", name = "redis-flow-limit-properties.prefix-key")
+        @ConditionalOnBean({IFlowLimit.class})
         public FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitProperties(FlowLimitProperties flowLimitProperties) {
-            FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitAspectProperties = flowLimitProperties.getRedisFlowLimitProperties();
-            int size1 = redisFlowLimitAspectProperties.getCounterLimitNumber().size();
-            int size2 = redisFlowLimitAspectProperties.getCounterHoldingTime().size();
-            int size3 = redisFlowLimitAspectProperties.getCounterKeys().size();
+            FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitProperties = flowLimitProperties.getRedisFlowLimitProperties();
+            int size1 = redisFlowLimitProperties.getCounterLimitNumber().size();
+            int size2 = redisFlowLimitProperties.getCounterHoldingTime().size();
+            int size3 = redisFlowLimitProperties.getCounterKeys().size();
             if (size1 == 0) {
                 throw new IllegalArgumentException("redis计数器的key数量最少为1");
             }
             if (!(size1 == size2 && size1 == size3)) {
                 throw new IllegalArgumentException("redis计数器的key数量与相应配置值数量不一致！");
             }
-            return redisFlowLimitAspectProperties;
+            return redisFlowLimitProperties;
         }
 
         @Override

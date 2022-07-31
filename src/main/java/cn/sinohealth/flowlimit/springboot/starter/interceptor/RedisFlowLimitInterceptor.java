@@ -105,17 +105,16 @@ public abstract class RedisFlowLimitInterceptor
     }
 
     @Override
-    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
         threadLocalMap.remove();//防止内存泄漏
-        IFlowLimitInterceptor.super.postHandle(request, response, handler, modelAndView);
     }
 
-    Map<String, RedisFlowLimitInterceptor> beansOfType;
+    private static Map<String, RedisFlowLimitInterceptor> beansOfType;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         //取出用户实现的拦截器
-        this.beansOfType = applicationContext.getBeansOfType(RedisFlowLimitInterceptor.class);
+        beansOfType = applicationContext.getBeansOfType(RedisFlowLimitInterceptor.class);
     }
 
     @Override
