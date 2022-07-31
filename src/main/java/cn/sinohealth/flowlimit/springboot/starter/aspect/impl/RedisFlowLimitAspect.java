@@ -36,37 +36,30 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect
      */
     private boolean enabledGlobalLimit;
 
-    private static class CounterKeyProperties {
-        /**
-         * baseKey，即全局key前缀
-         * <br/>形式：
-         * 注意：这里的每个key已经加到counterKey中
-         */
-        private static String prefixKey;
+    /**
+     * baseKey，即全局key前缀
+     * <br/>形式：
+     * 注意：这里的每个key已经加到counterKey中
+     */
+    private String prefixKey;
 
-        /**
-         * 计数器的数量
-         */
-        private static Integer keyNumber;
+    /**
+     * 每个计数器的Key。
+     * <pre>
+     * 注意：这里的每个key已经有全局的前缀prefixKey
+     *  <pre/>
+     */
+    private List<String> counterKeys;
 
-        /**
-         * 每个计数器的Key。
-         * <pre>
-         * 注意：这里的每个key已经有全局的前缀prefixKey
-         *  <pre/>
-         */
-        private static List<String> counterKeys;
+    /**
+     * 每个计数器的保持时长，单位是毫秒
+     */
+    private List<Long> counterHoldingTime;
 
-        /**
-         * 每个计数器的保持时长，单位是毫秒
-         */
-        private static List<Long> counterHoldingTime;
-
-        /**
-         * 每个计数器对应的限流次数，即接口调用次数限制
-         */
-        private static List<Integer> counterLimitNumber;
-    }
+    /**
+     * 每个计数器对应的限流次数，即接口调用次数限制
+     */
+    private List<Integer> counterLimitNumber;
 
 
     /**
@@ -93,18 +86,27 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect
         //封装公共属性
         this.enabledGlobalLimit = redisFlowLimitProperties.isEnabledGlobalLimit();
         //封装properties
-        CounterKeyProperties.prefixKey = redisFlowLimitProperties.getPrefixKey();
-        CounterKeyProperties.counterKeys = redisFlowLimitProperties.getCounterKeys().stream()
-                .map(key -> CounterKeyProperties.prefixKey + key).collect(Collectors.toList());
-        CounterKeyProperties.counterHoldingTime = redisFlowLimitProperties.getCounterHoldingTime();
-        CounterKeyProperties.counterLimitNumber = redisFlowLimitProperties.getCounterLimitNumber();
-        CounterKeyProperties.keyNumber = redisFlowLimitProperties.getCounterKeys().size();
+        RedisFlowLimitAspect.this.prefixKey = redisFlowLimitProperties.getPrefixKey();
+        String appendKey = appendCounterKeyWithMode();
+        counterKeys = redisFlowLimitProperties.getCounterKeys().stream()
+                .map(key -> prefixKey + key + appendKey).collect(Collectors.toList());
+        counterHoldingTime = redisFlowLimitProperties.getCounterHoldingTime();
+        counterLimitNumber = redisFlowLimitProperties.getCounterLimitNumber();
         return this;
+    }
+
+    /**
+     * 追加模式，有AOP模式和拦截器模式。前面要有个分号
+     *
+     * @return
+     */
+    public String appendCounterKeyWithMode() {
+        return "aspect:";
     }
 
     @PostConstruct
     public RedisFlowLimitAspect initBeanProperties() {
-        setEnabled(redisTemplate != null && !StringUtils.isEmpty(CounterKeyProperties.prefixKey));
+        setEnabled(redisTemplate != null && !StringUtils.isEmpty(prefixKey));
         if (isEnabled()) {
             log.info("Redis流量限制器启动成功！");
         }
@@ -114,7 +116,7 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect
 
     @Override
     public final boolean limitProcess(JoinPoint joinPoint) {
-        List<String> counterKey = CounterKeyProperties.counterKeys;
+        List<String> counterKey = counterKeys;
         if (!enabledGlobalLimit) {
             //未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
             counterKey = counterKey.stream()
@@ -124,8 +126,6 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect
                                     .orElse("")))
                     .collect(Collectors.toList());
         }
-        List<Long> counterHoldingTime = CounterKeyProperties.counterHoldingTime;
-        List<Integer> counterLimitNumber = CounterKeyProperties.counterLimitNumber;
         //当前计数器是否限制？
         boolean currentIsLimit = false;
         //遍历计数器
@@ -188,7 +188,7 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect
      */
     @Override
     protected final Object resetLimiter(JoinPoint joinPoint) {
-        List<String> counterKey = CounterKeyProperties.counterKeys;
+        List<String> counterKey = counterKeys;
         for (String key : counterKey) {
             redisTemplate.delete(key);
         }
