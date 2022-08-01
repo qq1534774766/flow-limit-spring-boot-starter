@@ -3,8 +3,6 @@ package cn.sinohealth.flowlimit.springboot.starter.aspect.impl;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimitAspect;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractFlowLimitAspect;
-import lombok.Data;
-import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +22,7 @@ import java.util.stream.Collectors;
  * @Description: Redis数据源，计数器的方式限流。排除未登录用户
  */
 @Slf4j
-public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect
+public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspect
         implements IFlowLimitAspect {
 
     private RedisTemplate<String, Object> redisTemplate;
@@ -71,22 +69,22 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect
      */
     public static final String OVERSTEP_FLOW_VERIFICATION = "overstep:flow:verification";
 
-    public RedisFlowLimitAspect() {
+    public AbstractRedisFlowLimitAspect() {
 
     }
 
     @Autowired(required = false)
-    public RedisFlowLimitAspect setRedisTemplate(RedisTemplate<String, Object> redisTemplate) {
+    public AbstractRedisFlowLimitAspect setRedisTemplate(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
         return this;
     }
 
     @Autowired(required = false)
-    public RedisFlowLimitAspect setCounterKeyProperties(FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitProperties) {
+    public AbstractRedisFlowLimitAspect setCounterKeyProperties(FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitProperties) {
         //封装公共属性
         this.enabledGlobalLimit = redisFlowLimitProperties.isEnabledGlobalLimit();
         //封装properties
-        RedisFlowLimitAspect.this.prefixKey = redisFlowLimitProperties.getPrefixKey();
+        AbstractRedisFlowLimitAspect.this.prefixKey = redisFlowLimitProperties.getPrefixKey();
         String appendKey = appendCounterKeyWithMode();
         counterKeys = redisFlowLimitProperties.getCounterKeys().stream()
                 .map(key -> prefixKey + key + appendKey).collect(Collectors.toList());
@@ -105,7 +103,7 @@ public abstract class RedisFlowLimitAspect extends AbstractFlowLimitAspect
     }
 
     @PostConstruct
-    public RedisFlowLimitAspect initBeanProperties() {
+    public AbstractRedisFlowLimitAspect initBeanProperties() {
         setEnabled(redisTemplate != null && !StringUtils.isEmpty(prefixKey));
         if (isEnabled()) {
             log.info("Redis流量限制器启动成功！");

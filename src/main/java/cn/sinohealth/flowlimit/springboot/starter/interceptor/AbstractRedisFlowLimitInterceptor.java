@@ -1,16 +1,12 @@
 package cn.sinohealth.flowlimit.springboot.starter.interceptor;
 
-import cn.sinohealth.flowlimit.springboot.starter.aspect.impl.RedisFlowLimitAspect;
+import cn.sinohealth.flowlimit.springboot.starter.aspect.impl.AbstractRedisFlowLimitAspect;
 import lombok.Data;
 import org.apache.commons.lang3.ObjectUtils;
 import org.aspectj.lang.JoinPoint;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.format.FormatterRegistry;
-import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -26,31 +22,31 @@ import java.util.Map;
  * @Description: 使用适配器模式，在RedisAspect基础上改造
  */
 @Data
-public abstract class RedisFlowLimitInterceptor
+public abstract class AbstractRedisFlowLimitInterceptor
         implements IFlowLimitInterceptor, WebMvcConfigurer, ApplicationContextAware {
 
-    private RedisFlowLimitAspect redisFlowLimitAspect = new RedisFlowLimitAspectImpl();
+    private AbstractRedisFlowLimitAspect redisFlowLimitAspect = new RedisFlowLimitAspectImpl();
     private ThreadLocal<Map<String, Object>> threadLocalMap = new ThreadLocal<>();
 
-    public class RedisFlowLimitAspectImpl extends RedisFlowLimitAspect {
+    public class RedisFlowLimitAspectImpl extends AbstractRedisFlowLimitAspect {
 
         @Override
         protected boolean filterRequest(JoinPoint joinPoint) {
-            return RedisFlowLimitInterceptor.this.filterRequest((HttpServletRequest) threadLocalMap.get().get("request"),
+            return AbstractRedisFlowLimitInterceptor.this.filterRequest((HttpServletRequest) threadLocalMap.get().get("request"),
                     (HttpServletResponse) threadLocalMap.get().get("response"),
                     threadLocalMap.get().get("handler"));
         }
 
         @Override
         protected boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint joinPoint) {
-            return RedisFlowLimitInterceptor.this.beforeLimitingHappenWhetherContinueLimit((HttpServletRequest) threadLocalMap.get().get("request"),
+            return AbstractRedisFlowLimitInterceptor.this.beforeLimitingHappenWhetherContinueLimit((HttpServletRequest) threadLocalMap.get().get("request"),
                     (HttpServletResponse) threadLocalMap.get().get("response"),
                     threadLocalMap.get().get("handler"));
         }
 
         @Override
         protected Object rejectHandle(JoinPoint joinPoint) throws Throwable {
-            RedisFlowLimitInterceptor.this.rejectHandle((HttpServletRequest) threadLocalMap.get().get("request"),
+            AbstractRedisFlowLimitInterceptor.this.rejectHandle((HttpServletRequest) threadLocalMap.get().get("request"),
                     (HttpServletResponse) threadLocalMap.get().get("response"),
                     threadLocalMap.get().get("handler"));
             return false;
@@ -63,7 +59,7 @@ public abstract class RedisFlowLimitInterceptor
 
         @Override
         protected String appendCounterKeyWithUserId(JoinPoint joinPoint) {
-            return RedisFlowLimitInterceptor.this.appendCounterKeyWithUserId((HttpServletRequest) threadLocalMap.get().get("request"),
+            return AbstractRedisFlowLimitInterceptor.this.appendCounterKeyWithUserId((HttpServletRequest) threadLocalMap.get().get("request"),
                     (HttpServletResponse) threadLocalMap.get().get("response"),
                     threadLocalMap.get().get("handler"));
         }
@@ -109,12 +105,12 @@ public abstract class RedisFlowLimitInterceptor
         threadLocalMap.remove();//防止内存泄漏
     }
 
-    private static Map<String, RedisFlowLimitInterceptor> beansOfType;
+    private static Map<String, AbstractRedisFlowLimitInterceptor> beansOfType;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         //取出用户实现的拦截器
-        beansOfType = applicationContext.getBeansOfType(RedisFlowLimitInterceptor.class);
+        beansOfType = applicationContext.getBeansOfType(AbstractRedisFlowLimitInterceptor.class);
     }
 
     @Override
