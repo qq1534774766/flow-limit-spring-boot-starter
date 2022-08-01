@@ -28,7 +28,7 @@ public abstract class AbstractRedisFlowLimitInterceptor
     private AbstractRedisFlowLimitAspect redisFlowLimitAspect = new RedisFlowLimitAspectImpl();
     private ThreadLocal<Map<String, Object>> threadLocalMap = new ThreadLocal<>();
 
-    public class RedisFlowLimitAspectImpl extends AbstractRedisFlowLimitAspect {
+    private class RedisFlowLimitAspectImpl extends AbstractRedisFlowLimitAspect {
 
         @Override
         protected boolean filterRequest(JoinPoint joinPoint) {
