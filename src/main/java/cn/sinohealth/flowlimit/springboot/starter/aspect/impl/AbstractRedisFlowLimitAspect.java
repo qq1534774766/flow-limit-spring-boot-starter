@@ -117,12 +117,15 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
         List<String> counterKey = counterKeys;
         if (!enabledGlobalLimit) {
             //未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
-            counterKey = counterKey.stream()
-                    .map(key ->
-                            key.concat(Optional
-                                    .ofNullable(appendCounterKeyWithUserId(joinPoint))
-                                    .orElse("")))
-                    .collect(Collectors.toList());
+            String userId = appendCounterKeyWithUserId(joinPoint);
+            if (StringUtils.hasText(userId)) {
+                counterKey = counterKey.stream()
+                        .map(key ->
+                                key.concat(Optional
+                                        .ofNullable(userId)
+                                        .orElse("")))
+                        .collect(Collectors.toList());
+            }
         }
         //当前计数器是否限制？
         boolean currentIsLimit = false;
