@@ -1,6 +1,6 @@
 package cn.sinohealth.flowlimit.springboot.starter.test;
 
-import cn.sinohealth.flowlimit.springboot.starter.interceptor.RedisFlowLimitInterceptor;
+import cn.sinohealth.flowlimit.springboot.starter.interceptor.AbstractRedisFlowLimitInterceptor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistration;
 
@@ -13,7 +13,7 @@ import javax.servlet.http.HttpServletResponse;
  * @Description: TODO
  */
 @Component
-public class RedisFlowLimitInterceptorConfig extends RedisFlowLimitInterceptor {
+public class RedisFlowLimitInterceptorConfig extends AbstractRedisFlowLimitInterceptor {
 
 
     @Override
