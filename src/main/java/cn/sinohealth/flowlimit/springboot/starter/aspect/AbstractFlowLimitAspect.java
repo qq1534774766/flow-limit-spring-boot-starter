@@ -18,7 +18,7 @@ public abstract class AbstractFlowLimitAspect implements IFlowLimitAspect {
      * 流量限制控制开关，根据实现类所需要的bean决定是否能开启。
      * 如Redis需要RedisTemplate，否则不启用流量限制
      */
-    private boolean enabled;
+    private volatile boolean enabled;
 
     public boolean isEnabled() {
         return enabled;
@@ -122,5 +122,5 @@ public abstract class AbstractFlowLimitAspect implements IFlowLimitAspect {
      * @param joinPoint 连接点
      * @return 保留返回、按需使用
      */
-    protected abstract Object resetLimiter(JoinPoint joinPoint);
+    public abstract Object resetLimiter(JoinPoint joinPoint);
 }
