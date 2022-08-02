@@ -20,6 +20,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.ObjectUtils;
 
+import java.util.Map;
+
 /**
  * @Author: wenqiaogang
  * @DateTime: 2022/7/27 9:55
@@ -32,7 +34,6 @@ abstract class FlowLimitConfiguration {
     @Configuration
     @ConditionalOnProperty(prefix = "flowlimit", value = {"enabled"}, havingValue = "true")
     static class BaseFlowLimitConfiguration {
-
 
     }
 
@@ -65,13 +66,23 @@ abstract class FlowLimitConfiguration {
 
         @Override
         public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-            if (ObjectUtils.isEmpty(applicationContext.getBeansOfType(IFlowLimit.class))) {
+            Map<String, IFlowLimit> iFlowLimitMap = applicationContext.getBeansOfType(IFlowLimit.class);
+            Map<String, IFlowLimitAspect> iFlowLimitAspectMap = applicationContext.getBeansOfType(IFlowLimitAspect.class);
+            Map<String, IFlowLimitInterceptor> iFlowLimitInterceptorMap = applicationContext.getBeansOfType(IFlowLimitInterceptor.class);
+            boolean soutLog = false;
+            if (iFlowLimitMap.isEmpty()) {
                 log.error("1.Redis流量限制器未启动!");
-                if (ObjectUtils.isEmpty(applicationContext.getBeansOfType(IFlowLimitAspect.class))) {
+                if (iFlowLimitAspectMap.isEmpty()) {
                     log.error("2.请确保{}被继承实现，且子类被Spring托管", AbstractRedisFlowLimitAspect.class.getSimpleName());
-                }
-                if (ObjectUtils.isEmpty(applicationContext.getBeansOfType(IFlowLimitInterceptor.class))) {
+                } else if (iFlowLimitInterceptorMap.isEmpty()) {
                     log.error("2.请确保{}被继承实现，且子类被Spring托管", AbstractRedisFlowLimitInterceptor.class.getSimpleName());
+                }
+            } else {
+                for (IFlowLimitAspect i : iFlowLimitAspectMap.values()) {
+                    log.info("流量限制启动成功！实现类：{}", i.getClass().getName());
+                }
+                for (IFlowLimitInterceptor i : iFlowLimitInterceptorMap.values()) {
+                    log.info("流量限制启动成功！实现类：{}", i.getClass().getName());
                 }
             }
         }

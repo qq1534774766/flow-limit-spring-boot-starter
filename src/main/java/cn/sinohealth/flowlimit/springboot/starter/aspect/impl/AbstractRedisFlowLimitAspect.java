@@ -107,13 +107,12 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
     public AbstractRedisFlowLimitAspect initBeanProperties() {
         setEnabled(redisTemplate != null && !StringUtils.isEmpty(prefixKey));
         if (isEnabled()) {
-            System.out.println(" ______ _                   _      _           _ _   ");
-            System.out.println("|  ____| |                 | |    (_)         (_) |  ");
-            System.out.println("| |__  | | _____      __   | |     _ _ __ ___  _| |_ ");
-            System.out.println("|  __| | |/ _ \\ \\ /\\ / /   | |    | | '_ ` _ \\| | __|");
-            System.out.println("| |    | | (_) \\ V  V /    | |____| | | | | | | | |_ ");
-            System.out.println("|_|    |_|\\___/ \\_/\\_/     |______|_|_| |_| |_|_|\\__|");
-            System.out.println("                                         " + FlowLimitVersion.getVersion() + " ");
+            log.info("\n _______  __        ______   ____    __    ____     __       __  .___  ___.  __  .___________.\n" +
+                    "|   ____||  |      /  __  \\  \\   \\  /  \\  /   /    |  |     |  | |   \\/   | |  | |           |\n" +
+                    "|  |__   |  |     |  |  |  |  \\   \\/    \\/   /     |  |     |  | |  \\  /  | |  | `---|  |----`\n" +
+                    "|   __|  |  |     |  |  |  |   \\            /      |  |     |  | |  |\\/|  | |  |     |  |     \n" +
+                    "|  |     |  `----.|  `--'  |    \\    /\\    /       |  `----.|  | |  |  |  | |  |     |  |     \n" +
+                    "|__|     |_______| \\______/      \\__/  \\__/        |_______||__| |__|  |__| |__|     |__|     \n");
         }
         return this;
     }
@@ -195,7 +194,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
      * 重置所有的流量限制的计数器
      */
     @Override
-    protected final Object resetLimiter(JoinPoint joinPoint) {
+    public final Object resetLimiter(JoinPoint joinPoint) {
         List<String> counterKey = counterKeys;
         for (String key : counterKey) {
             redisTemplate.delete(key);

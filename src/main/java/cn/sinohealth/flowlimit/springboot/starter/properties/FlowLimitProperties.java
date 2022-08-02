@@ -14,7 +14,6 @@ import java.util.List;
  * @Description: 统一配置类
  */
 @ConfigurationProperties(prefix = "flowlimit")
-@Component
 @Data
 public class FlowLimitProperties {
     /**
@@ -23,27 +22,30 @@ public class FlowLimitProperties {
     private boolean enabled = false;
 
 
+    /**
+     * Redis流量限制配置属性
+     */
     private RedisFlowLimitProperties redisFlowLimitProperties;
 
     @Data
     public static class RedisFlowLimitProperties {
 
         /**
-         * 是否全局限制，即所有用户所有操作均被计数限制.
+         * 是否启用全局限制，即所有用户所有操作均被一起计数限制.
          * <br/>
-         * FALSE则需要传递获取用户ID的方法。
+         * 不启用：则需要实现appendCounterKeyWithUserId()方法，并返回当前登录用户的ID。
          */
         private boolean enabledGlobalLimit = true;
 
         /**
-         * baseKey，即全局key前缀
+         * 即计数器的key前缀
          * <br/>形式：
-         * xxx:xxx:xxx:
+         * "icecream::innovative-medicine:desktop-web:xxx"
          */
         private String prefixKey;
 
         /**
-         * 每个计数器的Key
+         * 每个计数器的Key，注意计数器的key数量与相应配置值要一致
          */
         private List<String> counterKeys;
 
