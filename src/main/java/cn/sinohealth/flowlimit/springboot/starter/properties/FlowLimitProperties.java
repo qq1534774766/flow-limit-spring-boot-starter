@@ -14,7 +14,6 @@ import java.util.List;
  * @Description: 统一配置类
  */
 @ConfigurationProperties(prefix = "flowlimit")
-@Component
 @Data
 public class FlowLimitProperties {
     /**

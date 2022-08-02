@@ -34,12 +34,6 @@ abstract class FlowLimitConfiguration {
     @Configuration
     @ConditionalOnProperty(prefix = "flowlimit", value = {"enabled"}, havingValue = "true")
     static class BaseFlowLimitConfiguration {
-        @Autowired(required = false)
-        public void redisFlowLimitBootTest(FlowLimitProperties flowLimitProperties) {
-            if (!flowLimitProperties.isEnabled()) {
-                log.error("Redis流量限制器未启动");
-            }
-        }
 
     }
 
