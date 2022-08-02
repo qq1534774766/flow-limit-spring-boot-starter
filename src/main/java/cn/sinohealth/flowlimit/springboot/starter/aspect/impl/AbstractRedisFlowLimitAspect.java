@@ -3,6 +3,7 @@ package cn.sinohealth.flowlimit.springboot.starter.aspect.impl;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimitAspect;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractFlowLimitAspect;
+import cn.sinohealth.flowlimit.springboot.starter.utils.FlowLimitVersion;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -106,7 +107,13 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
     public AbstractRedisFlowLimitAspect initBeanProperties() {
         setEnabled(redisTemplate != null && !StringUtils.isEmpty(prefixKey));
         if (isEnabled()) {
-            log.info("Redis流量限制器启动成功！");
+            System.out.println(" ______ _                   _      _           _ _   ");
+            System.out.println("|  ____| |                 | |    (_)         (_) |  ");
+            System.out.println("| |__  | | _____      __   | |     _ _ __ ___  _| |_ ");
+            System.out.println("|  __| | |/ _ \\ \\ /\\ / /   | |    | | '_ ` _ \\| | __|");
+            System.out.println("| |    | | (_) \\ V  V /    | |____| | | | | | | | |_ ");
+            System.out.println("|_|    |_|\\___/ \\_/\\_/     |______|_|_| |_| |_|_|\\__|");
+            System.out.println("                                         " + FlowLimitVersion.getVersion() + " ");
         }
         return this;
     }
