@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>cn.sinohealth</groupId>
     <artifactId>flow-limit-spring-boot-starter</artifactId>
-    <version>1.3.0.releases</version>
+    <version>1.3.1.releases</version>
     <name>flow-limit-spring-boot-starter</name>
     <description>flow-limit-spring-boot-starter</description>
 
@@ -78,7 +78,7 @@
             <id>sinohealth-nexus-snapshots</id>
             <name>maven-snapshots</name>
             <!--snapshots仓库 -->
-            <url>http://192.168.16.87:8081/repository/maven-public/</url>
+            <url>http://192.168.16.87:8081/repository/maven-snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
     <dependencyManagement>
