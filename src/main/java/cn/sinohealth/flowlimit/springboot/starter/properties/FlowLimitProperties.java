@@ -27,7 +27,7 @@ public class FlowLimitProperties {
      */
     private RedisFlowLimitProperties redisFlowLimitProperties;
 
-    @Data
+
     public static class RedisFlowLimitProperties {
 
         /**
@@ -59,7 +59,60 @@ public class FlowLimitProperties {
          */
         private List<Integer> counterLimitNumber;
 
+        public boolean isEnabledGlobalLimit() {
+            return enabledGlobalLimit;
+        }
 
+        public void setEnabledGlobalLimit(boolean enabledGlobalLimit) {
+            this.enabledGlobalLimit = enabledGlobalLimit;
+        }
+
+        public String getPrefixKey() {
+            return prefixKey;
+        }
+
+        public void setPrefixKey(String prefixKey) {
+            this.prefixKey = prefixKey;
+        }
+
+        public List<String> getCounterKeys() {
+            return counterKeys;
+        }
+
+        public void setCounterKeys(List<String> counterKeys) {
+            this.counterKeys = counterKeys;
+        }
+
+        public List<Long> getCounterHoldingTime() {
+            return counterHoldingTime;
+        }
+
+        public void setCounterHoldingTime(List<Long> counterHoldingTime) {
+            this.counterHoldingTime = counterHoldingTime;
+        }
+
+        public List<Integer> getCounterLimitNumber() {
+            return counterLimitNumber;
+        }
+
+        public void setCounterLimitNumber(List<Integer> counterLimitNumber) {
+            this.counterLimitNumber = counterLimitNumber;
+        }
     }
 
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public RedisFlowLimitProperties getRedisFlowLimitProperties() {
+        return redisFlowLimitProperties;
+    }
+
+    public void setRedisFlowLimitProperties(RedisFlowLimitProperties redisFlowLimitProperties) {
+        this.redisFlowLimitProperties = redisFlowLimitProperties;
+    }
 }
