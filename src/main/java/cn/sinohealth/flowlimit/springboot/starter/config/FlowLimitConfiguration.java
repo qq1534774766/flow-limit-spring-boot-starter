@@ -6,20 +6,28 @@ import cn.sinohealth.flowlimit.springboot.starter.aspect.impl.AbstractRedisFlowL
 import cn.sinohealth.flowlimit.springboot.starter.interceptor.IFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.interceptor.AbstractRedisFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
+import cn.sinohealth.flowlimit.springboot.starter.utils.RedisFlowLimitTemplateHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.util.ObjectUtils;
 
+import javax.annotation.Resource;
 import java.util.Map;
 
 /**
@@ -38,14 +46,15 @@ abstract class FlowLimitConfiguration {
     }
 
     @Configuration
+    @ConditionalOnClass({RedisOperations.class})
     @AutoConfigureAfter({RedisAutoConfiguration.class})
     @ConditionalOnProperty(prefix = "flowlimit", value = {"enabled"}, havingValue = "true")
     static class RedisFlowLimitConfiguration implements ApplicationContextAware {
-        @Autowired
-        public void redisFlowLimitBootTest(RedisTemplate<String, Object> redisTemplate) {
-            if (ObjectUtils.isEmpty(redisTemplate)) {
-                log.error("Redis流量限制器未启动：RedisTemplate<String, Object> Bean 不存在");
-            }
+
+        @Bean
+        @ConditionalOnClass(RedisConnectionFactory.class)
+        public RedisFlowLimitTemplateHelper redisFlowLimitTemplateHelper(RedisConnectionFactory redisConnectionFactory) {
+            return new RedisFlowLimitTemplateHelper(redisConnectionFactory);
         }
 
         @Bean
@@ -90,9 +99,9 @@ abstract class FlowLimitConfiguration {
         @Autowired(required = false)
         public void redisFlowLimitInterceptor(AbstractRedisFlowLimitInterceptor redisFlowLimitInterceptor,
                                               FlowLimitProperties flowLimitProperties,
-                                              RedisTemplate<String, Object> redisTemplate) {
+                                              RedisFlowLimitTemplateHelper redisHelper) {
             AbstractRedisFlowLimitAspect redisFlowLimitAspect = redisFlowLimitInterceptor.getRedisFlowLimitAspect();
-            redisFlowLimitAspect.setRedisTemplate(redisTemplate)
+            redisFlowLimitAspect.setRedisTemplate(redisHelper)
                     .setCounterKeyProperties(flowLimitProperties.getRedisFlowLimitProperties());
             redisFlowLimitAspect.initBeanProperties();
         }

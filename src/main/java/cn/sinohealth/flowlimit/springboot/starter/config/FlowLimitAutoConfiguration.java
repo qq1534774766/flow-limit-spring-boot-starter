@@ -1,6 +1,5 @@
 package cn.sinohealth.flowlimit.springboot.starter.config;
 
-import cn.sinohealth.flowlimit.springboot.starter.config.redisSerializeConfig.RedisConfig;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -13,11 +12,10 @@ import org.springframework.context.annotation.Import;
  * @Description: 流量限制自动配置类，会被springboot自动加载
  */
 @Configuration
-@EnableConfigurationProperties(FlowLimitProperties.class)
+@EnableConfigurationProperties({FlowLimitProperties.class})
 @Import({FlowLimitConfiguration.BaseFlowLimitConfiguration.class,
         FlowLimitConfiguration.RedisFlowLimitConfiguration.class,
-        FlowLimitConfiguration.MysqlFlowLimitConfiguration.class,
-        RedisConfig.class})
+        FlowLimitConfiguration.MysqlFlowLimitConfiguration.class})
 public class FlowLimitAutoConfiguration {
 
 

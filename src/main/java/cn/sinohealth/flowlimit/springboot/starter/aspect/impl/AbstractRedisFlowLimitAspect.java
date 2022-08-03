@@ -3,11 +3,10 @@ package cn.sinohealth.flowlimit.springboot.starter.aspect.impl;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimitAspect;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractFlowLimitAspect;
-import cn.sinohealth.flowlimit.springboot.starter.utils.FlowLimitVersion;
+import cn.sinohealth.flowlimit.springboot.starter.utils.RedisFlowLimitTemplateHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.util.StringUtils;
 
@@ -26,7 +25,8 @@ import java.util.stream.Collectors;
 public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspect
         implements IFlowLimitAspect {
 
-    private RedisTemplate<String, Object> redisTemplate;
+
+    private RedisFlowLimitTemplateHelper redisHelper;
 
     /**
      * 是否全局限制，即所有用户所有操作均被计数限制.
@@ -61,22 +61,14 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
     private List<Integer> counterLimitNumber;
 
 
-    /**
-     * 【当用户超出限流时，需要判断key的存在性】
-     * <br/>
-     * key存在，表示用户通过了验证码的验证，重置限流计数器。
-     * <br/>
-     * key不存在，用户尚未完成验证，继续限流。
-     */
-    public static final String OVERSTEP_FLOW_VERIFICATION = "overstep:flow:verification";
 
     public AbstractRedisFlowLimitAspect() {
 
     }
 
     @Autowired(required = false)
-    public AbstractRedisFlowLimitAspect setRedisTemplate(RedisTemplate<String, Object> redisTemplate) {
-        this.redisTemplate = redisTemplate;
+    public AbstractRedisFlowLimitAspect setRedisTemplate(RedisFlowLimitTemplateHelper redisHelper) {
+        this.redisHelper = redisHelper;
         return this;
     }
 
@@ -105,7 +97,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
 
     @PostConstruct
     public AbstractRedisFlowLimitAspect initBeanProperties() {
-        setEnabled(redisTemplate != null && !StringUtils.isEmpty(prefixKey));
+        setEnabled(redisHelper != null && !StringUtils.isEmpty(prefixKey));
         if (isEnabled()) {
             log.info("\n _______  __        ______   ____    __    ____     __       __  .___  ___.  __  .___________.\n" +
                     "|   ____||  |      /  __  \\  \\   \\  /  \\  /   /    |  |     |  | |   \\/   | |  | |           |\n" +
@@ -177,14 +169,14 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
      * @return ture 当前key的计数器超出限制，禁止访问
      */
     private boolean counterProcess(String key, long timeout, Integer countMax) {
-        Long result = redisTemplate.execute(REDIS_INC_SCRIPT, Collections.singletonList(key), timeout);
+        Long result = redisHelper.execute(REDIS_INC_SCRIPT, Collections.singletonList(key), timeout);
         //设置key成功: 1
         // 原来的key自增失败，重设新的key: 2
         // key自增成功: 3
         if (Optional.ofNullable(result).orElse(-1L) < 3) {
             return false;
         }
-        return Optional.ofNullable((Integer) redisTemplate.opsForValue().get(key))
+        return Optional.ofNullable(redisHelper.getOne(key))
                 .map(alreadyCount -> alreadyCount > countMax)
                 .orElse(false);
     }
@@ -197,7 +189,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
     public final Object resetLimiter(JoinPoint joinPoint) {
         List<String> counterKey = counterKeys;
         for (String key : counterKey) {
-            redisTemplate.delete(key);
+            redisHelper.deleteKey(key);
         }
         return null;
     }
