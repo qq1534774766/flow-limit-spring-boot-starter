@@ -38,14 +38,15 @@ public class FlowLimitProperties {
         private boolean enabledGlobalLimit = true;
 
         /**
-         * 即计数器的key前缀
+         * 即计数器的key前缀，可以为空，但不建议
          * <br/>形式：
          * "icecream::innovative-medicine:desktop-web:xxx"
          */
         private String prefixKey;
 
         /**
-         * 每个计数器的Key，注意计数器的key数量与相应配置值要一致
+         * 每个计数器的Key，注意计数器的key数量与相应配置值要一致，可以为空，但不建议。
+         * 为空时候，key是UUID
          */
         private List<String> counterKeys;
 

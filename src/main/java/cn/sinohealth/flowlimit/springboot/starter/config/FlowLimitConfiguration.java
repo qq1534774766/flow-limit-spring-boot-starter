@@ -28,7 +28,9 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.util.ObjectUtils;
 
 import javax.annotation.Resource;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @Author: wenqiaogang
@@ -63,11 +65,12 @@ abstract class FlowLimitConfiguration {
             FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitProperties = flowLimitProperties.getRedisFlowLimitProperties();
             int size1 = redisFlowLimitProperties.getCounterLimitNumber().size();
             int size2 = redisFlowLimitProperties.getCounterHoldingTime().size();
-            int size3 = redisFlowLimitProperties.getCounterKeys().size();
-            if (size1 == 0) {
-                throw new IllegalArgumentException("redis计数器的key数量最少为1");
+            int size3 = Optional.ofNullable(redisFlowLimitProperties.getCounterKeys()).map(List::size).orElse(0);
+            if (size3 == 0) {
+                log.error("未指定计数器的key，建议在application.yaml指定，否则默认计数器的key使用的是UUID");
+                log.error("可在flowlimit->redis-flow-limit-properties->counter-keys指定");
             }
-            if (!(size1 == size2 && size1 == size3)) {
+            if (size1 != size2) {
                 throw new IllegalArgumentException("redis计数器的key数量与相应配置值数量不一致！");
             }
             return redisFlowLimitProperties;
