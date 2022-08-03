@@ -1,10 +1,15 @@
 package cn.sinohealth.flowlimit.springboot.starter.config.redisSerializeConfig;
 
+import com.alibaba.fastjson.support.spring.FastJsonRedisSerializer;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.*;
@@ -18,6 +23,7 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKN
  * @since 2019-01-28
  */
 @Configuration
+@Order(Integer.MAX_VALUE)
 public class RedisConfig {
     /**
      * RedisSerializer.json() = new GenericJackson2JsonRedisSerializer()
@@ -71,24 +77,18 @@ public class RedisConfig {
      * @param
      * @return
      */
-    @Bean
-    public RedisTemplate<String, Object> userInfoRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
-        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
-        redisTemplate.setConnectionFactory(redisConnectionFactory);
-        redisTemplate.setKeySerializer(stringRedisSerializer);
-
-        //二者对比可看@Bean初始化
-        redisTemplate.setValueSerializer(createGenericJackson2JsonRedisSerializer());
-//        redisTemplate.setValueSerializer(jackson2JsonRedisSerializer());
-
-
-        redisTemplate.setHashKeySerializer(stringRedisSerializer);
-        redisTemplate.setHashValueSerializer(jackson2JsonRedisSerializer());
-        redisTemplate.afterPropertiesSet();
-
-        return redisTemplate;
-    }
+//    @Bean
+//    @ConditionalOnMissingBean
+//    public RedisTemplate<String, Object> userInfoRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
+//        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+//        redisTemplate.setConnectionFactory(factory);
+//        StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
+//        FastJsonRedisSerializer fastJsonRedisSerializer = new FastJsonRedisSerializer();
+//        redisTemplate.setKeySerializer(stringRedisSerializer);
+//        redisTemplate.setDefaultSerializer(fastJsonRedisSerializer);
+//        redisTemplate.setHashValueSerializer(fastJsonRedisSerializer);
+//        return redisTemplate;
+//    }
 
 
 }

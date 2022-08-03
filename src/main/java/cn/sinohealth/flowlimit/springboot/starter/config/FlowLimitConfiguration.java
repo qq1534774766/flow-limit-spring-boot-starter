@@ -41,7 +41,7 @@ abstract class FlowLimitConfiguration {
     @AutoConfigureAfter({RedisAutoConfiguration.class})
     @ConditionalOnProperty(prefix = "flowlimit", value = {"enabled"}, havingValue = "true")
     static class RedisFlowLimitConfiguration implements ApplicationContextAware {
-        @Autowired
+        @Autowired(required = false)
         public void redisFlowLimitBootTest(RedisTemplate<String, Object> redisTemplate) {
             if (ObjectUtils.isEmpty(redisTemplate)) {
                 log.error("Redis流量限制器未启动：RedisTemplate<String, Object> Bean 不存在");
