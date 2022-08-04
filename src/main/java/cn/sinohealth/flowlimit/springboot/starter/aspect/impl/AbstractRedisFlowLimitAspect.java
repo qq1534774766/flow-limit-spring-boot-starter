@@ -103,7 +103,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
 
     @PostConstruct
     public AbstractRedisFlowLimitAspect initBeanProperties() {
-        setEnabled(redisHelper != null);
+        setEnabled(redisHelper != null && Optional.ofNullable(counterKeys).map(key -> !key.isEmpty()).orElse(false));
         if (isEnabled()) {
             log.info("\n _______  __        ______   ____    __    ____     __       __  .___  ___.  __  .___________.\n" +
                     "|   ____||  |      /  __  \\  \\   \\  /  \\  /   /    |  |     |  | |   \\/   | |  | |           |\n" +
