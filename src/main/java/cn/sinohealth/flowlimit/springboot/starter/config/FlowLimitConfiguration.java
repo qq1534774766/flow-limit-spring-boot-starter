@@ -67,7 +67,7 @@ abstract class FlowLimitConfiguration {
                 log.error("未指定计数器的key，建议在application.yaml指定，否则默认计数器的key使用的是UUID");
                 log.error("可在flowlimit->redis-flow-limit-properties->counter-keys指定");
             }
-            if (size1 != size2) {
+            if ((size3 != 0 && (!(size1 == size2 && size1 == size3))) || size1 != size2) {
                 throw new IllegalArgumentException("redis计数器的key数量与相应配置值数量不一致！");
             }
             return redisFlowLimitProperties;
