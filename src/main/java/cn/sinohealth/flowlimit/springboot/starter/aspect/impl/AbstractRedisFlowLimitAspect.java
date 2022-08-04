@@ -11,9 +11,9 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -61,7 +61,6 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
     private List<Integer> counterLimitNumber;
 
 
-
     public AbstractRedisFlowLimitAspect() {
 
     }
@@ -77,10 +76,17 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
         //封装公共属性
         this.enabledGlobalLimit = redisFlowLimitProperties.isEnabledGlobalLimit();
         //封装properties
-        AbstractRedisFlowLimitAspect.this.prefixKey = redisFlowLimitProperties.getPrefixKey();
+        this.prefixKey = StringUtils.isEmpty(redisFlowLimitProperties.getPrefixKey()) ? "" : (redisFlowLimitProperties.getPrefixKey());
         String appendKey = appendCounterKeyWithMode();
-        counterKeys = redisFlowLimitProperties.getCounterKeys().stream()
-                .map(key -> prefixKey + key + appendKey).collect(Collectors.toList());
+        counterKeys = Optional.ofNullable(redisFlowLimitProperties.getCounterKeys())
+                .map(keys -> keys.stream().map(key -> prefixKey + key + appendKey).collect(Collectors.toList()))
+                .orElse(((Supplier<ArrayList<String>>) () -> {
+                    ArrayList<String> keys = new ArrayList<>();
+                    for (int i = 0; i < redisFlowLimitProperties.getCounterHoldingTime().size(); i++) {
+                        keys.add(prefixKey + "flowlimit:" + UUID.randomUUID().toString().replaceAll("-", "") + ":" + appendKey);
+                    }
+                    return keys;
+                }).get());
         counterHoldingTime = redisFlowLimitProperties.getCounterHoldingTime();
         counterLimitNumber = redisFlowLimitProperties.getCounterLimitNumber();
         return this;
@@ -97,7 +103,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
 
     @PostConstruct
     public AbstractRedisFlowLimitAspect initBeanProperties() {
-        setEnabled(redisHelper != null && !StringUtils.isEmpty(prefixKey));
+        setEnabled(redisHelper != null && Optional.ofNullable(counterKeys).map(key -> !key.isEmpty()).orElse(false));
         if (isEnabled()) {
             log.info("\n _______  __        ______   ____    __    ____     __       __  .___  ___.  __  .___________.\n" +
                     "|   ____||  |      /  __  \\  \\   \\  /  \\  /   /    |  |     |  | |   \\/   | |  | |           |\n" +
