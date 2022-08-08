@@ -67,8 +67,9 @@ abstract class FlowLimitConfiguration {
                 log.error("未指定计数器的key，建议在application.yaml指定，否则默认计数器的key使用的是UUID");
                 log.error("可在flowlimit->redis-flow-limit-properties->counter-keys指定");
             }
-            if (size1 != size2) {
-                throw new IllegalArgumentException("redis计数器的key数量与相应配置值数量不一致！");
+            if ((size3 != 0 && (!(size1 == size2 && size1 == size3))) || size1 != size2) {
+                log.error("1.Redis流量限制器未启动!");
+                log.error("application.yaml中，redis计数器的key数量与相应配置的属性数量不一致！");
             }
             return redisFlowLimitProperties;
         }
@@ -91,10 +92,10 @@ abstract class FlowLimitConfiguration {
             } else {
                 if (!enableRedisFlowLimit.get()) {
                     for (IFlowLimitAspect i : iFlowLimitAspectMap.values()) {
-                        log.info("流量限制启动成功！实现类：{}", i.getClass().getName());
+                        log.info("发现[流量限制启动器]实现类：{}", i.getClass().getName());
                     }
                     for (IFlowLimitInterceptor i : iFlowLimitInterceptorMap.values()) {
-                        log.info("流量限制启动成功！实现类：{}", i.getClass().getName());
+                        log.info("发现[流量限制启动器]实现类：{}", i.getClass().getName());
                     }
                 }
             }
