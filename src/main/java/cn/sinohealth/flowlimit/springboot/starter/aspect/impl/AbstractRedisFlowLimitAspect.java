@@ -12,6 +12,7 @@ import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -89,6 +90,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
                 }).get());
         counterHoldingTime = redisFlowLimitProperties.getCounterHoldingTime();
         counterLimitNumber = redisFlowLimitProperties.getCounterLimitNumber();
+        timeUnit = redisFlowLimitProperties.getCounterHoldingTimeUnit();
         return this;
     }
 
@@ -103,7 +105,13 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
 
     @PostConstruct
     public AbstractRedisFlowLimitAspect initBeanProperties() {
-        setEnabled(redisHelper != null && Optional.ofNullable(counterKeys).map(key -> !key.isEmpty()).orElse(false));
+        setEnabled(redisHelper != null &&
+                Optional.ofNullable(counterKeys).map(key -> !key.isEmpty()).orElse(false) &&
+                Optional.ofNullable(counterHoldingTime)
+                        .map(cht -> cht.size() == Optional.ofNullable(counterLimitNumber)
+                                .map(List::size)
+                                .orElse(-1))
+                        .orElse(false));
         if (isEnabled()) {
             log.info("\n _______  __        ______   ____    __    ____     __       __  .___  ___.  __  .___________.\n" +
                     "|   ____||  |      /  __  \\  \\   \\  /  \\  /   /    |  |     |  | |   \\/   | |  | |           |\n" +
@@ -150,15 +158,16 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
      */
     protected abstract String appendCounterKeyWithUserId(JoinPoint joinPoint);
 
+    private static TimeUnit timeUnit;
     private static final String LUA_INC_SCRIPT_TEXT =
-            " local setSuccess = redis.call('set',KEYS[1],1,'ex',ARGV[1],'nx');" +
+            " local setSuccess = redis.call('set',KEYS[1],1,'px',ARGV[1],'nx');" +
                     " if(type(setSuccess)=='table') then" +
                     " return 1;" +
                     " else" +
                     " redis.call('incr',KEYS[1]);" +
                     " local keyTtl = redis.call('ttl',KEYS[1]);" +
                     " if(keyTtl==-1) then" +
-                    " redis.call('set',KEYS[1],1,'ex',ARGV[1],'xx');" +
+                    " redis.call('set',KEYS[1],1,'px',ARGV[1],'xx');" +
                     " return 2;" +
                     " end" +
                     " end" +
@@ -174,8 +183,8 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
      * @param countMax
      * @return ture 当前key的计数器超出限制，禁止访问
      */
-    private boolean counterProcess(String key, long timeout, Integer countMax) {
-        Long result = redisHelper.execute(REDIS_INC_SCRIPT, Collections.singletonList(key), timeout);
+    private boolean counterProcess(String key, Long timeout, Integer countMax) {
+        Long result = redisHelper.execute(REDIS_INC_SCRIPT, Collections.singletonList(key), Math.max(timeUnit.toMillis(timeout), 1L));
         //设置key成功: 1
         // 原来的key自增失败，重设新的key: 2
         // key自增成功: 3
