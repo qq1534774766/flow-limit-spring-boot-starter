@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @Author: wenqiaogang
@@ -51,9 +52,14 @@ public class FlowLimitProperties {
         private List<String> counterKeys;
 
         /**
-         * 每个计数器的保持时长，单位是秒
+         * 每个计数器的保持时长
          */
         private List<Long> counterHoldingTime;
+
+        /**
+         * 计数器的时间单位，默认是秒
+         */
+        private TimeUnit counterHoldingTimeUnit = TimeUnit.SECONDS;
 
         /**
          * 每个计数器对应的限流次数，即接口调用次数限制
@@ -98,6 +104,14 @@ public class FlowLimitProperties {
 
         public void setCounterLimitNumber(List<Integer> counterLimitNumber) {
             this.counterLimitNumber = counterLimitNumber;
+        }
+
+        public TimeUnit getCounterHoldingTimeUnit() {
+            return counterHoldingTimeUnit;
+        }
+
+        public void setCounterHoldingTimeUnit(TimeUnit counterHoldingTimeUnit) {
+            this.counterHoldingTimeUnit = counterHoldingTimeUnit;
         }
     }
 

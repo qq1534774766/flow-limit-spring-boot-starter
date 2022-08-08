@@ -18,6 +18,7 @@ flowlimit:
       - 180
       - 300
       - 3600
+    counter-holding-time-unit: microseconds
     counter-limit-number:
       - 5
       - 80
