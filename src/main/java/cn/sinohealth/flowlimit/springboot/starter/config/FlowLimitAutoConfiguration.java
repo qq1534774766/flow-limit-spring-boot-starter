@@ -13,9 +13,7 @@ import org.springframework.context.annotation.Import;
  */
 @Configuration
 @EnableConfigurationProperties({FlowLimitProperties.class})
-@Import({FlowLimitConfiguration.BaseFlowLimitConfiguration.class,
-        FlowLimitConfiguration.RedisFlowLimitConfiguration.class,
-        FlowLimitConfiguration.MysqlFlowLimitConfiguration.class})
+@Import({FlowLimitConfiguration.RedisFlowLimitConfiguration.class})
 public class FlowLimitAutoConfiguration {
 
 
