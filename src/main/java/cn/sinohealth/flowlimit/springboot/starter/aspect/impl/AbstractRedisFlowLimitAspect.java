@@ -133,7 +133,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
             if (StringUtils.hasText(userId)) {
                 counterKey = counterKey.stream()
                         .map(key ->
-                                key.concat(Optional
+                                key.concat("userID:").concat(Optional
                                         .ofNullable(userId)
                                         .orElse("")))
                         .collect(Collectors.toList());
@@ -160,18 +160,18 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
 
     private static TimeUnit timeUnit;
     private static final String LUA_INC_SCRIPT_TEXT =
-            " local setSuccess = redis.call('set',KEYS[1],1,'px',ARGV[1],'nx');" +
-                    " if(type(setSuccess)=='table') then" +
-                    " return 1;" +
-                    " else" +
-                    " redis.call('incr',KEYS[1]);" +
-                    " local keyTtl = redis.call('ttl',KEYS[1]);" +
-                    " if(keyTtl==-1) then" +
-                    " redis.call('set',KEYS[1],1,'px',ARGV[1],'xx');" +
-                    " return 2;" +
-                    " end" +
-                    " end" +
-                    " return 3;";
+            "local counterKey = KEYS[1]; " +
+                    "local timeout = ARGV[1]; " +
+                    "local countMax = ARGV[2]; " +
+                    "local currentCount = redis.call('get', counterKey); " +
+                    "if currentCount and tonumber(currentCount) >= tonumber(countMax) then " +
+                    "return 0; " +
+                    "end " +
+                    "currentCount = redis.call('incr',counterKey); " +
+                    "if tonumber(currentCount) == 1 then " +
+                    "redis.call('pexpire', counterKey, timeout); " +
+                    "end " +
+                    "return 1; ";
     private static final DefaultRedisScript<Long> REDIS_INC_SCRIPT = new DefaultRedisScript<>(LUA_INC_SCRIPT_TEXT, Long.class);
 
     /**
@@ -184,16 +184,12 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
      * @return ture 当前key的计数器超出限制，禁止访问
      */
     private boolean counterProcess(String key, Long timeout, Integer countMax) {
-        Long result = redisHelper.execute(REDIS_INC_SCRIPT, Collections.singletonList(key), Math.max(timeUnit.toMillis(timeout), 1L));
-        //设置key成功: 1
-        // 原来的key自增失败，重设新的key: 2
-        // key自增成功: 3
-        if (Optional.ofNullable(result).orElse(-1L) < 3) {
-            return false;
-        }
-        return Optional.ofNullable(redisHelper.getOne(key))
-                .map(alreadyCount -> alreadyCount > countMax)
-                .orElse(false);
+        Long result = redisHelper.execute(REDIS_INC_SCRIPT,
+                Collections.singletonList(key),
+                Math.max(timeUnit.toMillis(timeout), 1L), countMax);
+        //1:成功，放行
+        //0:达到限制门槛
+        return Optional.ofNullable(result).orElse(1L) == 0L;
     }
 
 

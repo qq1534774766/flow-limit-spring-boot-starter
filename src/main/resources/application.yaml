@@ -1,0 +1,27 @@
+#应用名称
+spring:
+  redis:
+    host: 192.168.16.87
+    port: 6379
+flowlimit:
+  enabled: true
+  redis-flow-limit-properties:
+    enabled-global-limit: true
+    prefix-key: "icecreamtest::innovative-medicine:desktop-web:redis:flow:limit"
+    counter-keys:
+      - "counter:second:3:"
+      - "counter:minutes:2:"
+      - "counter:minutes:5:"
+      - "counter:hour:1:"
+    counter-holding-time:
+      - 6
+      - 180
+      - 300
+      - 3600
+    counter-holding-time-unit: seconds
+    counter-limit-number:
+      - 5
+      - 80
+      - 320
+      - 240000
+
