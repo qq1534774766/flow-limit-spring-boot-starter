@@ -6,7 +6,7 @@ spring:
 flowlimit:
   enabled: true
   redis-flow-limit-properties:
-    enabled-global-limit: true
+    enabled-global-limit: false
     prefix-key: "icecreamtest::innovative-medicine:desktop-web:redis:flow:limit"
     counter-keys:
       - "counter:second:3:"
