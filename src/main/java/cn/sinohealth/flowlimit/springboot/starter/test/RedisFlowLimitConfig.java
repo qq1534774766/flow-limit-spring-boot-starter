@@ -40,6 +40,6 @@ public class RedisFlowLimitConfig extends AbstractRedisFlowLimitAspect {
 
     @Override
     protected String appendCounterKeyWithUserId(JoinPoint joinPoint) {
-        return new Random().nextInt(1000) + "";
+        return "2";
     }
 }
