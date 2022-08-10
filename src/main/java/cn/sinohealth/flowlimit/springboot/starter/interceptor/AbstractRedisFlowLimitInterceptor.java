@@ -86,7 +86,7 @@ public abstract class AbstractRedisFlowLimitInterceptor
 
         private Object getHandlerFromThreadLocalSafely() {
             return Optional.ofNullable(threadLocalMap.get())
-                    .map(o -> o.get("response"))
+                    .map(o -> o.get("handler"))
                     .orElse(null);
         }
 
