@@ -13,8 +13,6 @@ import org.springframework.util.StringUtils;
 import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -72,26 +70,50 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
         return this;
     }
 
+    /**
+     * 初始化所有的成员遍历
+     *
+     * @param redisFlowLimitProperties 配置类
+     * @return 链式编程
+     */
     @Autowired(required = false)
     public AbstractRedisFlowLimitAspect setCounterKeyProperties(FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitProperties) {
         //封装公共属性
         this.enabledGlobalLimit = redisFlowLimitProperties.isEnabledGlobalLimit();
         //封装properties
         this.prefixKey = StringUtils.isEmpty(redisFlowLimitProperties.getPrefixKey()) ? "" : (redisFlowLimitProperties.getPrefixKey());
-        String appendKey = appendCounterKeyWithMode();
-        counterKeys = Optional.ofNullable(redisFlowLimitProperties.getCounterKeys())
-                .map(keys -> keys.stream().map(key -> prefixKey + key + appendKey).collect(Collectors.toList()))
-                .orElse(((Supplier<ArrayList<String>>) () -> {
-                    ArrayList<String> keys = new ArrayList<>();
-                    for (int i = 0; i < redisFlowLimitProperties.getCounterHoldingTime().size(); i++) {
-                        keys.add(prefixKey + "flowlimit:" + UUID.randomUUID().toString().replaceAll("-", "") + ":" + appendKey);
-                    }
-                    return keys;
-                }).get());
-        counterHoldingTime = redisFlowLimitProperties.getCounterHoldingTime();
-        counterLimitNumber = redisFlowLimitProperties.getCounterLimitNumber();
+        this.counterHoldingTime = redisFlowLimitProperties.getCounterHoldingTime();
+        this.counterLimitNumber = redisFlowLimitProperties.getCounterLimitNumber();
         timeUnit = redisFlowLimitProperties.getCounterHoldingTimeUnit();
+        joinCounterKeys(redisFlowLimitProperties);
         return this;
+    }
+
+    /**
+     * 对公共计数器key进行拼接
+     *
+     * @param redisFlowLimitProperties 配置类
+     */
+    private void joinCounterKeys(FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitProperties) {
+        String appendKeyWithMode = appendCounterKeyWithMode();
+        this.counterKeys = Optional.ofNullable(redisFlowLimitProperties.getCounterKeys())
+                .map(keys -> keys.stream().map(key -> prefixKey + key + appendKeyWithMode).collect(Collectors.toList()))
+                .orElse(getCounterKeysUseUUID(redisFlowLimitProperties));
+    }
+
+    /**
+     * 如果配置文件中没有配置counter的key，那么则会使用UUID作为key
+     *
+     * @param redisFlowLimitProperties 配置类
+     * @return 拼接完成的key
+     */
+    private ArrayList<String> getCounterKeysUseUUID(FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitProperties) {
+        String appendKeyWithMode = appendCounterKeyWithMode();
+        ArrayList<String> keys = new ArrayList<>();
+        for (int i = 0; i < redisFlowLimitProperties.getCounterHoldingTime().size(); i++) {
+            keys.add(prefixKey + "flowlimit:" + UUID.randomUUID().toString().replaceAll("-", "") + ":" + appendKeyWithMode);
+        }
+        return keys;
     }
 
     /**
@@ -103,16 +125,14 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
         return "aspect:";
     }
 
+    /**
+     * bean的初始化
+     *
+     * @return
+     */
     @PostConstruct
     public AbstractRedisFlowLimitAspect initBeanProperties() {
-        setEnabled(redisHelper != null &&
-                Optional.ofNullable(counterKeys).map(key -> !key.isEmpty()).orElse(false) &&
-                Optional.ofNullable(counterHoldingTime)
-                        .map(cht -> cht.size() == Optional.ofNullable(counterLimitNumber)
-                                .map(List::size)
-                                .orElse(-1))
-                        .orElse(false));
-        if (isEnabled()) {
+        if (enabledFlowLimit()) {
             log.info("\n _______  __        ______   ____    __    ____     __       __  .___  ___.  __  .___________.\n" +
                     "|   ____||  |      /  __  \\  \\   \\  /  \\  /   /    |  |     |  | |   \\/   | |  | |           |\n" +
                     "|  |__   |  |     |  |  |  |  \\   \\/    \\/   /     |  |     |  | |  \\  /  | |  | `---|  |----`\n" +
@@ -123,22 +143,27 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
         return this;
     }
 
+    /**
+     * 判断流量限制是否能正常开启。
+     *
+     * @return
+     */
+    private boolean enabledFlowLimit() {
+        boolean enabled = redisHelper != null &&
+                Optional.ofNullable(counterKeys).map(key -> !key.isEmpty()).orElse(false) &&
+                Optional.ofNullable(counterHoldingTime)
+                        .map(cht -> cht.size() == Optional.ofNullable(counterLimitNumber)
+                                .map(List::size)
+                                .orElse(-1))
+                        .orElse(false);
+        setEnabled(enabled);
+        return enabled;
+    }
+
 
     @Override
     public final boolean limitProcess(JoinPoint joinPoint) {
-        List<String> counterKey = counterKeys;
-        if (!enabledGlobalLimit) {
-            //未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
-            String userId = appendCounterKeyWithUserId(joinPoint);
-            if (StringUtils.hasText(userId)) {
-                counterKey = counterKey.stream()
-                        .map(key ->
-                                key.concat("userID:").concat(Optional
-                                        .ofNullable(userId)
-                                        .orElse("")))
-                        .collect(Collectors.toList());
-            }
-        }
+        List<String> counterKey = getFinalCounterKeys(joinPoint);
         //当前计数器是否限制？
         boolean currentIsLimit = false;
         //遍历计数器
@@ -147,6 +172,28 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
         }
         //当且仅当所有计数器都返回false才不限制
         return currentIsLimit;
+    }
+
+    /**
+     * 如果开启全局限制，那么会拼接用户的ID作为key
+     *
+     * @param joinPoint
+     * @return
+     */
+    private List<String> getFinalCounterKeys(JoinPoint joinPoint) {
+        if (!enabledGlobalLimit) {
+            //未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
+            String userId = appendCounterKeyWithUserId(joinPoint);
+            if (StringUtils.hasText(userId)) {
+                return this.counterKeys.stream()
+                        .map(key ->
+                                key.concat("userId:").concat(Optional
+                                        .ofNullable(userId)
+                                        .orElse("")))
+                        .collect(Collectors.toList());
+            }
+        }
+        return this.counterKeys;
     }
 
 
@@ -198,8 +245,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
      */
     @Override
     public final Object resetLimiter(JoinPoint joinPoint) {
-        List<String> counterKey = counterKeys;
-        for (String key : counterKey) {
+        for (String key : getFinalCounterKeys(joinPoint)) {
             redisHelper.deleteKey(key);
         }
         return null;

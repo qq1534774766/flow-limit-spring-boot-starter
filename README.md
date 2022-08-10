@@ -46,18 +46,21 @@ flowlimit:
       - "counter:minutes:2:"
       - "counter:minutes:5:"
       - "counter:hour:1:"
+      - ...
     #每个计数器的保持时长，单位是秒
     counter-holding-time:
       - 6
       - 180
       - 300
       - 3600
+      - ...
     #每个计数器对应的限流次数，即接口调用次数限制
     counter-limit-number:
       - 5
       - 80
       - 320
       - 240000
+      - ... 
 ```
 
 3.1提供两种实现方式，首先是AOP方式.
@@ -79,6 +82,10 @@ public class MyRedisFlowLimitConfig extends AbstractRedisFlowLimitAspect {
     //过滤哪些请求，返回TRUE表示对该请求不进行计数限制
     @Override
     protected boolean filterRequest(JoinPoint joinPoint) {
+        if (threadLocal.get().getUseID() == 1) {
+            //放行超级管理员
+            return true;
+        }
         return false;
     }
 
@@ -97,7 +104,7 @@ public class MyRedisFlowLimitConfig extends AbstractRedisFlowLimitAspect {
     //追加用户的ID，enabled-global-limit: true时，会被调用，返回当前登录用户的ID以便限流只是针对当前用户生效。
     @Override
     protected String appendCounterKeyWithUserId(JoinPoint joinPoint) {
-        return new Random().nextInt(1000) + "";
+        return threadlocal.get().getUserId();
     }
 }
 ```
@@ -106,12 +113,18 @@ public class MyRedisFlowLimitConfig extends AbstractRedisFlowLimitAspect {
 
 新建MyRedisFlowLimitInterceptorConfig.class继承AbstractRedisFlowLimitInterceptor并实现其所有方法。
 
-**父类已经将拦截器注册了，因此不需要手动在Configuration中注册拦截器，仅仅需要配置拦截路径即可**
+**父类已经将拦截器注册了，因此不需要手动在WebMvcConfiguration中注册拦截器，仅仅需要配置拦截路径即可**
 
 ```java
 //交由Spring托管
 @Component
 public class MyRedisFlowLimitInterceptorConfig extends AbstractRedisFlowLimitInterceptor {
+    //设置拦截器的拦截路径
+    @Override
+    public void setInterceptorPathPatterns(InterceptorRegistration registry) {
+        registry.addPathPatterns("/api/**");
+    }
+
     //过滤哪些请求，返回TRUE表示对该请求不进行计数限制
     @Override
     public boolean filterRequest(HttpServletRequest request, HttpServletResponse response, Object handler) {
@@ -138,11 +151,6 @@ public class MyRedisFlowLimitInterceptorConfig extends AbstractRedisFlowLimitInt
         response.setStatus(404);
     }
 
-    //设置拦截器的拦截路径
-    @Override
-    public void setInterceptorPathPatterns(InterceptorRegistration registry) {
-        registry.addPathPatterns("/**/**");
-    }
 }
 ```
 
