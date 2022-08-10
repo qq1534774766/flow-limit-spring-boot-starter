@@ -34,19 +34,19 @@ public abstract class AbstractRedisFlowLimitInterceptor
         @Override
         protected boolean filterRequest(JoinPoint joinPoint) {
             return AbstractRedisFlowLimitInterceptor.this.filterRequest(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
-                    threadLocalMap.get().get("handler"));
+                    getHandlerFromThreadLocalSafely());
         }
 
         @Override
         protected boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint joinPoint) {
             return AbstractRedisFlowLimitInterceptor.this.beforeLimitingHappenWhetherContinueLimit(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
-                    threadLocalMap.get().get("handler"));
+                    getHandlerFromThreadLocalSafely());
         }
 
         @Override
         protected Object rejectHandle(JoinPoint joinPoint) throws Throwable {
             AbstractRedisFlowLimitInterceptor.this.rejectHandle(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
-                    threadLocalMap.get().get("handler"));
+                    getHandlerFromThreadLocalSafely());
             return false;
         }
 
@@ -58,7 +58,7 @@ public abstract class AbstractRedisFlowLimitInterceptor
         @Override
         protected String appendCounterKeyWithUserId(JoinPoint joinPoint) {
             return AbstractRedisFlowLimitInterceptor.this.appendCounterKeyWithUserId(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
-                    threadLocalMap.get().get("handler"));
+                    getHandlerFromThreadLocalSafely());
         }
 
         @Override
@@ -80,6 +80,12 @@ public abstract class AbstractRedisFlowLimitInterceptor
 
         private HttpServletResponse getResponseFromThreadLocalSafely() {
             return (HttpServletResponse) Optional.ofNullable(threadLocalMap.get())
+                    .map(o -> o.get("response"))
+                    .orElse(null);
+        }
+
+        private Object getHandlerFromThreadLocalSafely() {
+            return Optional.ofNullable(threadLocalMap.get())
                     .map(o -> o.get("response"))
                     .orElse(null);
         }
