@@ -1,13 +1,19 @@
+# 摘要
+
+- `master`与`deploy`分支等价，后者用来部署到`maven`仓库时候使用
+- `v1.x`的版本当中，要保留`main/java/**/test`、启动类和`application.yaml`文件，用于对本启动器的测试。合并到master/deploy分支时，需取消合并这些文件，避免多余
+- `test`中有`controller`，也是用来测试的接口
+
 # 1.工程简介
 
 > Flow-Limit-Spring-boot-starter，是一个springboot的启动器，提供限流与反爬的解决方案。
 
 - 更新日志：
-    - v1.0:实现Redis AOP计数器限流。
-    - v1.1:重构启动器结构，使用**模板方法模式**。
-    - v1.2:新增Redis拦截器方式，本质是RedisAOP适配，即**适配器模式**。
-    - v1.3:AOP与Interceptor可以一起使用，因其执行顺序Interceptor>AOP，因此需要准确的配置切点与拦截路径。
-    - v1.4:配置文件，prefix、counterKey允许为null。修复重大Bug。
+  - v1.0:实现Redis AOP计数器限流。
+  - v1.1:重构启动器结构，使用**模板方法模式**。
+  - v1.2:新增Redis拦截器方式，本质是RedisAOP适配，即**适配器模式**。
+  - v1.3:AOP与Interceptor可以一起使用，因其执行顺序Interceptor>AOP，因此需要准确的配置切点与拦截路径。
+  - v1.4:配置文件，prefix、counterKey允许为null。修复重大Bug。
 
 简单使用，只需引入依赖，简单配置一下就能使用，无侵入，易插拔，易使用。
 
@@ -70,35 +76,35 @@ flowlimit:
 //开启切面
 @Aspect
 public class MyRedisFlowLimitConfig extends AbstractRedisFlowLimitAspect {
-    //选择需要被限制的Controller方法
-    @Pointcut("within(cn.sinohealth.flowlimit.springboot.starter.test.TestController)" +
-            "&&@annotation(org.springframework.web.bind.annotation.RequestMapping)")
-    public void pointcut() {
-    }
+  //选择需要被限制的Controller方法
+  @Pointcut("within(cn.sinohealth.flowlimit.springboot.starter.test.TestController)" +
+          "&&@annotation(org.springframework.web.bind.annotation.RequestMapping)")
+  public void pointcut() {
+  }
 
-    //过滤哪些请求，返回TRUE表示对该请求不进行计数限制
-    @Override
-    protected boolean filterRequest(JoinPoint joinPoint) {
-        return false;
-    }
+  //过滤哪些请求，返回TRUE表示对该请求不进行计数限制
+  @Override
+  protected boolean filterRequest(JoinPoint joinPoint) {
+    return false;
+  }
 
-    //当计数器达到上限时执行，返回TRUE则清空计数器放行，否则拒绝策略
-    @Override
-    protected boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint joinPoint) {
-        return false;
-    }
+  //当计数器达到上限时执行，返回TRUE则清空计数器放行，否则拒绝策略
+  @Override
+  protected boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint joinPoint) {
+    return false;
+  }
 
-    //拒绝策略，可以选择抛出异常，或者返回与Controller类型一样的数据封装
-    @Override
-    protected Object rejectHandle(JoinPoint joinPoint) throws Throwable {
-        throw new Exception("AOP拦截接口");
-    }
+  //拒绝策略，可以选择抛出异常，或者返回与Controller类型一样的数据封装
+  @Override
+  protected Object rejectHandle(JoinPoint joinPoint) throws Throwable {
+    throw new Exception("AOP拦截接口");
+  }
 
-    //追加用户的ID，enabled-global-limit: true时，会被调用，返回当前登录用户的ID以便限流只是针对当前用户生效。
-    @Override
-    protected String appendCounterKeyWithUserId(JoinPoint joinPoint) {
-        return new Random().nextInt(1000) + "";
-    }
+  //追加用户的ID，enabled-global-limit: true时，会被调用，返回当前登录用户的ID以便限流只是针对当前用户生效。
+  @Override
+  protected String appendCounterKeyWithUserId(JoinPoint joinPoint) {
+    return new Random().nextInt(1000) + "";
+  }
 }
 ```
 
@@ -112,37 +118,37 @@ public class MyRedisFlowLimitConfig extends AbstractRedisFlowLimitAspect {
 //交由Spring托管
 @Component
 public class MyRedisFlowLimitInterceptorConfig extends AbstractRedisFlowLimitInterceptor {
-    //过滤哪些请求，返回TRUE表示对该请求不进行计数限制
-    @Override
-    public boolean filterRequest(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        return false;
-    }
+  //过滤哪些请求，返回TRUE表示对该请求不进行计数限制
+  @Override
+  public boolean filterRequest(HttpServletRequest request, HttpServletResponse response, Object handler) {
+    return false;
+  }
 
-    //追加用户的ID，enabled-global-limit: true时，会被调用，返回当前登录用户的ID以便限流只是针对当前用户生效。
-    @Override
-    public String appendCounterKeyWithUserId(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        return null;
-    }
+  //追加用户的ID，enabled-global-limit: true时，会被调用，返回当前登录用户的ID以便限流只是针对当前用户生效。
+  @Override
+  public String appendCounterKeyWithUserId(HttpServletRequest request, HttpServletResponse response, Object handler) {
+    return null;
+  }
 
-    //当计数器达到上限时执行，返回TRUE则清空计数器放行，否则拒绝策略
-    @Override
-    public boolean beforeLimitingHappenWhetherContinueLimit(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        return false;
-    }
+  //当计数器达到上限时执行，返回TRUE则清空计数器放行，否则拒绝策略
+  @Override
+  public boolean beforeLimitingHappenWhetherContinueLimit(HttpServletRequest request, HttpServletResponse response, Object handler) {
+    return false;
+  }
 
-    //拒绝策略，可以选择抛出异常，或者返回与Controller类型一样的数据封装
-    @Override
-    public void rejectHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        response.setCharacterEncoding("utf-8");
-        response.getWriter().write("接口调用频繁");
-        response.setStatus(404);
-    }
+  //拒绝策略，可以选择抛出异常，或者返回与Controller类型一样的数据封装
+  @Override
+  public void rejectHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    response.setCharacterEncoding("utf-8");
+    response.getWriter().write("接口调用频繁");
+    response.setStatus(404);
+  }
 
-    //设置拦截器的拦截路径
-    @Override
-    public void setInterceptorPathPatterns(InterceptorRegistration registry) {
-        registry.addPathPatterns("/**/**");
-    }
+  //设置拦截器的拦截路径
+  @Override
+  public void setInterceptorPathPatterns(InterceptorRegistration registry) {
+    registry.addPathPatterns("/**/**");
+  }
 }
 ```
 
