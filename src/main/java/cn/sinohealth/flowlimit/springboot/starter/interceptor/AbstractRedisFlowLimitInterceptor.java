@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @Author: wenqiaogang
@@ -32,23 +33,20 @@ public abstract class AbstractRedisFlowLimitInterceptor
 
         @Override
         protected boolean filterRequest(JoinPoint joinPoint) {
-            return AbstractRedisFlowLimitInterceptor.this.filterRequest((HttpServletRequest) threadLocalMap.get().get("request"),
-                    (HttpServletResponse) threadLocalMap.get().get("response"),
-                    threadLocalMap.get().get("handler"));
+            return AbstractRedisFlowLimitInterceptor.this.filterRequest(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
+                    getHandlerFromThreadLocalSafely());
         }
 
         @Override
         protected boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint joinPoint) {
-            return AbstractRedisFlowLimitInterceptor.this.beforeLimitingHappenWhetherContinueLimit((HttpServletRequest) threadLocalMap.get().get("request"),
-                    (HttpServletResponse) threadLocalMap.get().get("response"),
-                    threadLocalMap.get().get("handler"));
+            return AbstractRedisFlowLimitInterceptor.this.beforeLimitingHappenWhetherContinueLimit(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
+                    getHandlerFromThreadLocalSafely());
         }
 
         @Override
         protected Object rejectHandle(JoinPoint joinPoint) throws Throwable {
-            AbstractRedisFlowLimitInterceptor.this.rejectHandle((HttpServletRequest) threadLocalMap.get().get("request"),
-                    (HttpServletResponse) threadLocalMap.get().get("response"),
-                    threadLocalMap.get().get("handler"));
+            AbstractRedisFlowLimitInterceptor.this.rejectHandle(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
+                    getHandlerFromThreadLocalSafely());
             return false;
         }
 
@@ -59,9 +57,8 @@ public abstract class AbstractRedisFlowLimitInterceptor
 
         @Override
         protected String appendCounterKeyWithUserId(JoinPoint joinPoint) {
-            return AbstractRedisFlowLimitInterceptor.this.appendCounterKeyWithUserId((HttpServletRequest) threadLocalMap.get().get("request"),
-                    (HttpServletResponse) threadLocalMap.get().get("response"),
-                    threadLocalMap.get().get("handler"));
+            return AbstractRedisFlowLimitInterceptor.this.appendCounterKeyWithUserId(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
+                    getHandlerFromThreadLocalSafely());
         }
 
         @Override
@@ -75,9 +72,28 @@ public abstract class AbstractRedisFlowLimitInterceptor
             return !isReject;
         }
 
+        private HttpServletRequest getRequestFromThreadLocalSafely() {
+            return (HttpServletRequest) Optional.ofNullable(threadLocalMap.get())
+                    .map(o -> o.get("request"))
+                    .orElse(null);
+        }
+
+        private HttpServletResponse getResponseFromThreadLocalSafely() {
+            return (HttpServletResponse) Optional.ofNullable(threadLocalMap.get())
+                    .map(o -> o.get("response"))
+                    .orElse(null);
+        }
+
+        private Object getHandlerFromThreadLocalSafely() {
+            return Optional.ofNullable(threadLocalMap.get())
+                    .map(o -> o.get("handler"))
+                    .orElse(null);
+        }
+
         @Override
         public final void pointcut() {
         }
+
     }
 
     @Override
@@ -125,4 +141,6 @@ public abstract class AbstractRedisFlowLimitInterceptor
      * @param registry
      */
     public abstract void setInterceptorPathPatterns(InterceptorRegistration registry);
+
+
 }
