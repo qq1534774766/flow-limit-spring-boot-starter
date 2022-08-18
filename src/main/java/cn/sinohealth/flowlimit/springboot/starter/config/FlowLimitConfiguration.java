@@ -6,7 +6,7 @@ import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractRedisFlowLimitA
 import cn.sinohealth.flowlimit.springboot.starter.interceptor.IFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.interceptor.AbstractRedisFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
-import cn.sinohealth.flowlimit.springboot.starter.utils.RedisFlowLimitTemplateHelper;
+import cn.sinohealth.flowlimit.springboot.starter.utils.FlowLimitCacheHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +15,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
@@ -26,7 +29,9 @@ import org.springframework.util.ObjectUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 /**
  * @Author: wenqiaogang
@@ -45,14 +50,33 @@ abstract class FlowLimitConfiguration {
 
         @Bean
         @ConditionalOnClass(RedisConnectionFactory.class)
-        public RedisFlowLimitTemplateHelper redisFlowLimitTemplateHelper(RedisConnectionFactory redisConnectionFactory) {
-            return new RedisFlowLimitTemplateHelper(redisConnectionFactory);
+        public FlowLimitCacheHelper redisFlowLimitTemplateHelper(FlowLimitProperties.CounterFlowLimitProperties counterFlowLimitProperties, RedisConnectionFactory redisConnectionFactory) {
+
+            return new FlowLimitCacheHelper(counterFlowLimitProperties.getDataSourceType(), redisConnectionFactory/*,caffeineMapBuilder(counterFlowLimitProperties)*/);
         }
+//
+//        /**
+//         * key:当前计数器的保持时长，Caffeine 缓存对象
+//         * @param counterFlowLimitProperties
+//         * @return
+//         */
+//        public Map<Long, Caffeine<Object, Object>> caffeineMapBuilder(FlowLimitProperties.CounterFlowLimitProperties counterFlowLimitProperties){
+//            List<Long> counterHoldingTime = counterFlowLimitProperties.getCounterHoldingTime();
+//            TimeUnit counterHoldingTimeUnit = counterFlowLimitProperties.getCounterHoldingTimeUnit();
+//            return counterHoldingTime.stream()
+//                    .collect(Collectors.toMap(t -> t, holdingTime -> {
+//                        return Caffeine.newBuilder()
+//                                .initialCapacity(Short.MAX_VALUE) //初始大小
+//                                .maximumSize(Long.MAX_VALUE)  //最大大小
+//                                .expireAfterWrite(holdingTime, counterHoldingTimeUnit); //时间单位
+//                    }));
+//
+//        }
 
         @Bean
         @ConditionalOnBean({IFlowLimit.class})
-        public FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitProperties(FlowLimitProperties flowLimitProperties) {
-            FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitProperties = flowLimitProperties.getRedisFlowLimitProperties();
+        public FlowLimitProperties.CounterFlowLimitProperties redisFlowLimitProperties(FlowLimitProperties flowLimitProperties) {
+            FlowLimitProperties.CounterFlowLimitProperties redisFlowLimitProperties = flowLimitProperties.getRedisFlowLimitProperties();
             if (ObjectUtils.isEmpty(redisFlowLimitProperties)) return null;
             int size1 = redisFlowLimitProperties.getCounterLimitNumber().size();
             int size2 = redisFlowLimitProperties.getCounterHoldingTime().size();
@@ -97,4 +121,24 @@ abstract class FlowLimitConfiguration {
             redisFlowLimitInterceptor.setOwn(redisFlowLimitInterceptor);
         }
     }
+
+//    @Configuration
+//    @EnableCaching
+//    @ConditionalOnProperty(prefix = "flowlimit", value = {"enabled"}, havingValue = "true")
+//    static class CacheConfiguration{
+//        @Bean(name = "oneHourCacheManager")
+//        public CacheManager oneHourCacheManager(){
+//            Caffeine caffeine = Caffeine.newBuilder()
+//                    .initialCapacity(10) //初始大小
+//                    .maximumSize(11)  //最大大小
+//                    .expireAfterWrite(1, TimeUnit.HOURS); //写入/更新之后1小时过期
+//
+//            CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+//            caffeineCacheManager.setAllowNullValues(true);
+//            caffeineCacheManager.setCaffeine(caffeine);
+//            Cache build = caffeine.build();
+//            build.put(1,build.getIfPresent(1));
+//            return caffeineCacheManager;
+//        }
+//    }
 }

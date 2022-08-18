@@ -2,7 +2,7 @@ package cn.sinohealth.flowlimit.springboot.starter.aspect;
 
 import cn.sinohealth.flowlimit.springboot.starter.AbstractFlowLimit;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
-import cn.sinohealth.flowlimit.springboot.starter.utils.RedisFlowLimitTemplateHelper;
+import cn.sinohealth.flowlimit.springboot.starter.utils.FlowLimitCacheHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -25,7 +25,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<Joi
         implements IFlowLimitAspect<JoinPoint> {
 
 
-    private RedisFlowLimitTemplateHelper redisHelper;
+    private FlowLimitCacheHelper redisHelper;
 
     /**
      * 是否全局限制，即所有用户所有操作均被计数限制.
@@ -65,7 +65,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<Joi
     }
 
     @Autowired(required = false)
-    public AbstractRedisFlowLimitAspect setRedisTemplate(RedisFlowLimitTemplateHelper redisHelper) {
+    public AbstractRedisFlowLimitAspect setRedisTemplate(FlowLimitCacheHelper redisHelper) {
         this.redisHelper = redisHelper;
         return this;
     }
@@ -77,7 +77,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<Joi
      * @return 链式编程
      */
     @Autowired(required = false)
-    public AbstractRedisFlowLimitAspect setCounterKeyProperties(FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitProperties) {
+    public AbstractRedisFlowLimitAspect setCounterKeyProperties(FlowLimitProperties.CounterFlowLimitProperties redisFlowLimitProperties) {
         //封装公共属性
         this.enabledGlobalLimit = redisFlowLimitProperties.isEnabledGlobalLimit();
         //封装properties
@@ -94,7 +94,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<Joi
      *
      * @param redisFlowLimitProperties 配置类
      */
-    private void joinCounterKeys(FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitProperties) {
+    private void joinCounterKeys(FlowLimitProperties.CounterFlowLimitProperties redisFlowLimitProperties) {
         String appendKeyWithMode = appendCounterKeyWithMode();
         this.counterKeys = Optional.ofNullable(redisFlowLimitProperties.getCounterKeys())
                 .map(keys -> keys.stream().map(key -> prefixKey + key + appendKeyWithMode).collect(Collectors.toList()))
@@ -107,7 +107,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<Joi
      * @param redisFlowLimitProperties 配置类
      * @return 拼接完成的key
      */
-    private ArrayList<String> getCounterKeysUseUUID(FlowLimitProperties.RedisFlowLimitProperties redisFlowLimitProperties) {
+    private ArrayList<String> getCounterKeysUseUUID(FlowLimitProperties.CounterFlowLimitProperties redisFlowLimitProperties) {
         String appendKeyWithMode = appendCounterKeyWithMode();
         ArrayList<String> keys = new ArrayList<>();
         for (int i = 0; i < redisFlowLimitProperties.getCounterHoldingTime().size(); i++) {
@@ -222,21 +222,6 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<Joi
     protected abstract String appendCounterKeyWithUserId(JoinPoint joinPoint);
 
     private static TimeUnit timeUnit;
-    private static final String LUA_INC_SCRIPT_TEXT =
-            "local counterKey = KEYS[1]; " +
-                    "local timeout = ARGV[1]; " +
-                    "local countMax = ARGV[2]; " +
-                    "local currentCount = redis.call('get', counterKey); " +
-                    "if currentCount and tonumber(currentCount) >= tonumber(countMax) then " +
-                    "return 0; " +
-                    "end " +
-                    "currentCount = redis.call('incr',counterKey); " +
-                    "if tonumber(currentCount) == 1 then " +
-                    "redis.call('pexpire', counterKey, timeout); " +
-                    "end " +
-                    "return 1; ";
-    private static final DefaultRedisScript<Long> REDIS_INC_SCRIPT = new DefaultRedisScript<>(LUA_INC_SCRIPT_TEXT, Long.class);
-
     /**
      * 对key进行细粒的操作,即计数器自增
      * 会用LUA脚本实现,如果Redis宕机，那么会拦截所有请求。
@@ -247,12 +232,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<Joi
      * @return ture 当前key的计数器超出限制，禁止访问
      */
     private boolean counterProcess(String key, Long timeout, Integer countMax) {
-        Long result = redisHelper.execute(REDIS_INC_SCRIPT,
-                Collections.singletonList(key),
-                Math.max(timeUnit.toMillis(timeout), 1L), countMax);
-        //1:成功，放行
-        //0:达到限制门槛
-        return Optional.ofNullable(result).orElse(1L) == 0L;
+        return redisHelper.increaseKeySafely(key, Math.max(timeUnit.toMillis(timeout), 1L), countMax);
     }
 
 

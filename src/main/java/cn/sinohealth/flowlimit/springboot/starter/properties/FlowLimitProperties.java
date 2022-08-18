@@ -1,11 +1,9 @@
 package cn.sinohealth.flowlimit.springboot.starter.properties;
 
+import cn.sinohealth.flowlimit.springboot.starter.utils.CacheDataSourceTypeEnum;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -26,10 +24,10 @@ public class FlowLimitProperties {
     /**
      * Redis流量限制配置属性
      */
-    private RedisFlowLimitProperties redisFlowLimitProperties;
+    private CounterFlowLimitProperties redisFlowLimitProperties;
 
 
-    public static class RedisFlowLimitProperties {
+    public static class CounterFlowLimitProperties {
 
         /**
          * 是否启用全局限制，即所有用户所有操作均被一起计数限制.
@@ -37,6 +35,10 @@ public class FlowLimitProperties {
          * 不启用：则需要实现appendCounterKeyWithUserId()方法，并返回当前登录用户的ID。
          */
         private boolean enabledGlobalLimit = true;
+        /**
+         * 计数器模式下的数据源，默认是Redis数据源
+         */
+        private CacheDataSourceTypeEnum dataSourceType = CacheDataSourceTypeEnum.Redis;
 
         /**
          * 即计数器的key前缀，可以为空，但不建议
@@ -113,6 +115,14 @@ public class FlowLimitProperties {
         public void setCounterHoldingTimeUnit(TimeUnit counterHoldingTimeUnit) {
             this.counterHoldingTimeUnit = counterHoldingTimeUnit;
         }
+
+        public CacheDataSourceTypeEnum getDataSourceType() {
+            return dataSourceType;
+        }
+
+        public void setDataSourceType(CacheDataSourceTypeEnum dataSourceType) {
+            this.dataSourceType = dataSourceType;
+        }
     }
 
     public boolean isEnabled() {
@@ -123,11 +133,11 @@ public class FlowLimitProperties {
         this.enabled = enabled;
     }
 
-    public RedisFlowLimitProperties getRedisFlowLimitProperties() {
+    public CounterFlowLimitProperties getRedisFlowLimitProperties() {
         return redisFlowLimitProperties;
     }
 
-    public void setRedisFlowLimitProperties(RedisFlowLimitProperties redisFlowLimitProperties) {
+    public void setRedisFlowLimitProperties(CounterFlowLimitProperties redisFlowLimitProperties) {
         this.redisFlowLimitProperties = redisFlowLimitProperties;
     }
 }
