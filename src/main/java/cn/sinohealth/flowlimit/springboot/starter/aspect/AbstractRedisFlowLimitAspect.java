@@ -1,11 +1,11 @@
-package cn.sinohealth.flowlimit.springboot.starter.aspect.impl;
+package cn.sinohealth.flowlimit.springboot.starter.aspect;
 
-import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimitAspect;
+import cn.sinohealth.flowlimit.springboot.starter.AbstractFlowLimit;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
-import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractFlowLimitAspect;
 import cn.sinohealth.flowlimit.springboot.starter.utils.RedisFlowLimitTemplateHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.Around;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.util.StringUtils;
@@ -21,8 +21,8 @@ import java.util.stream.Collectors;
  * @Description: Redis数据源，计数器的方式限流。排除未登录用户
  */
 @Slf4j
-public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspect
-        implements IFlowLimitAspect {
+public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<JoinPoint>
+        implements IFlowLimitAspect<JoinPoint> {
 
 
     private RedisFlowLimitTemplateHelper redisHelper;
@@ -119,7 +119,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
     /**
      * 追加模式，有AOP模式和拦截器模式。前面要有个分号
      *
-     * @return
+     * @return 模式
      */
     public String appendCounterKeyWithMode() {
         return "aspect:";
@@ -128,7 +128,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
     /**
      * bean的初始化
      *
-     * @return
+     * @return this
      */
     @PostConstruct
     public AbstractRedisFlowLimitAspect initBeanProperties() {
@@ -146,7 +146,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
     /**
      * 判断流量限制是否能正常开启。
      *
-     * @return
+     * @return true 开启
      */
     private boolean enabledFlowLimit() {
         boolean enabled = redisHelper != null &&
@@ -160,7 +160,23 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
         return enabled;
     }
 
+    /**
+     * 定义增强方式，默认使用环绕增强
+     * <br/>
+     * 不建议子类重写。如需重写，则<strong>必须</strong>回调父类的 flowLimitProcess(joinPoint)方法！
+     */
+    @Around("pointcut()")
+    public Object adviceMode(JoinPoint joinPoint) throws Throwable {
+        return this.flowLimitProcess(joinPoint);
+    }
 
+
+    /**
+     * 限流逻辑
+     *
+     * @param joinPoint 连接点
+     * @return TRUE 限流
+     */
     @Override
     public final boolean limitProcess(JoinPoint joinPoint) {
         List<String> counterKey = getFinalCounterKeys(joinPoint);
@@ -177,8 +193,8 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
     /**
      * 如果开启全局限制，那么会拼接用户的ID作为key
      *
-     * @param joinPoint
-     * @return
+     * @param joinPoint 连接点
+     * @return 最终的Key
      */
     private List<String> getFinalCounterKeys(JoinPoint joinPoint) {
         if (!enabledGlobalLimit) {
@@ -200,7 +216,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
     /**
      * 重构计数器的key，未开启全局计数，即计数器要拼接的用户ID，对每一个用户单独限流
      *
-     * @param joinPoint
+     * @param joinPoint 连接点
      * @return 重构逻辑
      */
     protected abstract String appendCounterKeyWithUserId(JoinPoint joinPoint);
@@ -225,9 +241,9 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimitAspe
      * 对key进行细粒的操作,即计数器自增
      * 会用LUA脚本实现,如果Redis宕机，那么会拦截所有请求。
      *
-     * @param key
-     * @param timeout
-     * @param countMax
+     * @param key 当前key
+     * @param timeout 超时时间
+     * @param countMax 最大计数
      * @return ture 当前key的计数器超出限制，禁止访问
      */
     private boolean counterProcess(String key, Long timeout, Integer countMax) {

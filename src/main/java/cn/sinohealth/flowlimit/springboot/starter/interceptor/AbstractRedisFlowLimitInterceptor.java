@@ -1,6 +1,6 @@
 package cn.sinohealth.flowlimit.springboot.starter.interceptor;
 
-import cn.sinohealth.flowlimit.springboot.starter.aspect.impl.AbstractRedisFlowLimitAspect;
+import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractRedisFlowLimitAspect;
 import lombok.Data;
 import org.apache.commons.lang3.ObjectUtils;
 import org.aspectj.lang.JoinPoint;
@@ -36,6 +36,7 @@ public abstract class AbstractRedisFlowLimitInterceptor
             return AbstractRedisFlowLimitInterceptor.this.filterRequest(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
                     getHandlerFromThreadLocalSafely());
         }
+
 
         @Override
         protected boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint joinPoint) {
@@ -98,7 +99,7 @@ public abstract class AbstractRedisFlowLimitInterceptor
 
     @Override
     public boolean limitProcess(JoinPoint joinPoint) {
-        return redisFlowLimitAspect.limitProcess(joinPoint);
+        return redisFlowLimitAspect.limitProcess(null);
     }
 
     @Override

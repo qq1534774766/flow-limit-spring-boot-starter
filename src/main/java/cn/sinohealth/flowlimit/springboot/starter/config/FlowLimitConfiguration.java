@@ -2,7 +2,7 @@ package cn.sinohealth.flowlimit.springboot.starter.config;
 
 import cn.sinohealth.flowlimit.springboot.starter.IFlowLimit;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimitAspect;
-import cn.sinohealth.flowlimit.springboot.starter.aspect.impl.AbstractRedisFlowLimitAspect;
+import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractRedisFlowLimitAspect;
 import cn.sinohealth.flowlimit.springboot.starter.interceptor.IFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.interceptor.AbstractRedisFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
@@ -36,12 +36,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 abstract class FlowLimitConfiguration {
 
-
-    @Configuration
-    @ConditionalOnProperty(prefix = "flowlimit", value = {"enabled"}, havingValue = "true")
-    static class BaseFlowLimitConfiguration {
-
-    }
 
     @Configuration
     @ConditionalOnClass({RedisOperations.class})
@@ -110,10 +104,5 @@ abstract class FlowLimitConfiguration {
                     .setCounterKeyProperties(flowLimitProperties.getRedisFlowLimitProperties());
             redisFlowLimitAspect.initBeanProperties();
         }
-    }
-
-    @Configuration
-    @ConditionalOnProperty(prefix = "flowlimit", value = {"enabled"}, havingValue = "true")
-    static class MysqlFlowLimitConfiguration {
     }
 }

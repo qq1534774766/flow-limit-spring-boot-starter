@@ -21,7 +21,7 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKN
 /**
  * @Author: wenqiaogang
  * @DateTime: 2022/8/3 13:32
- * @Description: 为了不影响其他项目Redis的序列化配置，于是聚合本starter所必须的RedisTemplate亿避免对其他类造成影响
+ * @Description: 为了不影响其他项目Redis的序列化配置，于是聚合本starter所必须的RedisTemplate以避免对其他类造成影响
  */
 public class RedisFlowLimitTemplateHelper {
 
