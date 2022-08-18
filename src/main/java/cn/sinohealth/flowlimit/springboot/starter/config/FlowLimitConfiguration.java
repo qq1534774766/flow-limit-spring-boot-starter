@@ -7,6 +7,8 @@ import cn.sinohealth.flowlimit.springboot.starter.interceptor.IFlowLimitIntercep
 import cn.sinohealth.flowlimit.springboot.starter.interceptor.AbstractRedisFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
 import cn.sinohealth.flowlimit.springboot.starter.utils.FlowLimitCacheHelper;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,26 +54,30 @@ abstract class FlowLimitConfiguration {
         @ConditionalOnClass(RedisConnectionFactory.class)
         public FlowLimitCacheHelper redisFlowLimitTemplateHelper(FlowLimitProperties.CounterFlowLimitProperties counterFlowLimitProperties, RedisConnectionFactory redisConnectionFactory) {
 
-            return new FlowLimitCacheHelper(counterFlowLimitProperties.getDataSourceType(), redisConnectionFactory/*,caffeineMapBuilder(counterFlowLimitProperties)*/);
+            FlowLimitCacheHelper flowLimitCacheHelper = new FlowLimitCacheHelper(counterFlowLimitProperties.getDataSourceType());
+            flowLimitCacheHelper.initRedisStrategyService(redisConnectionFactory);
+            flowLimitCacheHelper.initLocalStrategyService(caffeineMapBuilder(counterFlowLimitProperties));
+            return flowLimitCacheHelper;
         }
-//
-//        /**
-//         * key:当前计数器的保持时长，Caffeine 缓存对象
-//         * @param counterFlowLimitProperties
-//         * @return
-//         */
-//        public Map<Long, Caffeine<Object, Object>> caffeineMapBuilder(FlowLimitProperties.CounterFlowLimitProperties counterFlowLimitProperties){
-//            List<Long> counterHoldingTime = counterFlowLimitProperties.getCounterHoldingTime();
-//            TimeUnit counterHoldingTimeUnit = counterFlowLimitProperties.getCounterHoldingTimeUnit();
-//            return counterHoldingTime.stream()
-//                    .collect(Collectors.toMap(t -> t, holdingTime -> {
-//                        return Caffeine.newBuilder()
-//                                .initialCapacity(Short.MAX_VALUE) //初始大小
-//                                .maximumSize(Long.MAX_VALUE)  //最大大小
-//                                .expireAfterWrite(holdingTime, counterHoldingTimeUnit); //时间单位
-//                    }));
-//
-//        }
+
+        /**
+         * key:当前计数器的保持时长，Caffeine 缓存对象
+         *
+         * @param counterFlowLimitProperties
+         * @return
+         */
+        public Map<Long, Caffeine<Object, Object>> caffeineMapBuilder(FlowLimitProperties.CounterFlowLimitProperties counterFlowLimitProperties) {
+            List<Long> counterHoldingTime = counterFlowLimitProperties.getCounterHoldingTime();
+            TimeUnit timeUnit = counterFlowLimitProperties.getCounterHoldingTimeUnit();
+            return counterHoldingTime.stream()
+                    .collect(Collectors.toMap(timeUnit::toMillis, holdingTime -> {
+                        return Caffeine.newBuilder()
+                                .initialCapacity(Short.MAX_VALUE) //初始大小
+                                .maximumSize(Long.MAX_VALUE)  //最大大小
+                                .expireAfterAccess(timeUnit.toMillis(holdingTime), TimeUnit.MILLISECONDS); //时间单位
+                    }));
+
+        }
 
         @Bean
         @ConditionalOnBean({IFlowLimit.class})
@@ -122,23 +128,22 @@ abstract class FlowLimitConfiguration {
         }
     }
 
-//    @Configuration
-//    @EnableCaching
-//    @ConditionalOnProperty(prefix = "flowlimit", value = {"enabled"}, havingValue = "true")
-//    static class CacheConfiguration{
-//        @Bean(name = "oneHourCacheManager")
-//        public CacheManager oneHourCacheManager(){
-//            Caffeine caffeine = Caffeine.newBuilder()
-//                    .initialCapacity(10) //初始大小
-//                    .maximumSize(11)  //最大大小
-//                    .expireAfterWrite(1, TimeUnit.HOURS); //写入/更新之后1小时过期
-//
-//            CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-//            caffeineCacheManager.setAllowNullValues(true);
-//            caffeineCacheManager.setCaffeine(caffeine);
-//            Cache build = caffeine.build();
-//            build.put(1,build.getIfPresent(1));
-//            return caffeineCacheManager;
-//        }
-//    }
+    @Configuration
+    @EnableCaching
+    @ConditionalOnProperty(prefix = "flowlimit", value = {"enabled"}, havingValue = "true")
+    static class CacheConfiguration {
+        @Bean(name = "oneHourCacheManager")
+        public CacheManager oneHourCacheManager() {
+            Caffeine caffeine = Caffeine.newBuilder()
+                    .initialCapacity(10) //初始大小
+                    .maximumSize(11)  //最大大小
+                    .expireAfterWrite(1, TimeUnit.HOURS); //写入/更新之后1小时过期
+
+            CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+            caffeineCacheManager.setAllowNullValues(true);
+            caffeineCacheManager.setCaffeine(caffeine);
+//            caffeineCacheManager.
+            return caffeineCacheManager;
+        }
+    }
 }

@@ -8,8 +8,9 @@ import lombok.Data;
  * @Description: TODO
  */
 public enum CacheDataSourceTypeEnum {
-    Redis(1, "Redis 数据源"),
-    Local(2, "本地  数据源");
+    Redis(1, "Redis数据源"),
+    Local(2, "本地数据源"),
+    MySql(3, "MySQL数据源");
 
     private final Integer code;
     private final String describe;

@@ -3,6 +3,9 @@ package cn.sinohealth.flowlimit.springboot.starter.utils;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -30,29 +33,40 @@ public class FlowLimitCacheHelper {
 
     private final CacheHelperFactory cacheHelperFactory;
 
-    public FlowLimitCacheHelper(CacheDataSourceTypeEnum strategy, RedisConnectionFactory redisConnectionFactory/*,Map<Long, Caffeine<Object, Object>> caffeineMap*/) {
+    public FlowLimitCacheHelper(CacheDataSourceTypeEnum strategy) {
         //指定策略
         FlowLimitCacheHelper.strategy = strategy;
-        //构建缓存
         //工厂初始化
         this.cacheHelperFactory = new CacheHelperFactory();
+    }
+
+    public void initRedisStrategyService(RedisConnectionFactory redisConnectionFactory) {
         //Redis策略初始化
         RedisStrategyService redisStrategyService = new RedisStrategyService(redisConnectionFactory);
-        //本地缓存策略初始化
-        LocalStrategyService localStrategyService = new LocalStrategyService(/*caffeineMap*/);
-        //构建缓存对象
-//        if(CacheDataSourceTypeEnum.Local==strategy){
-//            localStrategyService.buildCache();
-//        }
-        //设置工厂策略
         this.cacheHelperFactory.addStrategyService(CacheDataSourceTypeEnum.Redis, redisStrategyService);
+    }
+
+    public void initLocalStrategyService(Map<Long, Caffeine<Object, Object>> caffeineMap) {
+        //本地缓存策略初始化
+        LocalStrategyService localStrategyService = new LocalStrategyService(caffeineMap);
+        //构建缓存对象
+        if (CacheDataSourceTypeEnum.Local == strategy) {
+            localStrategyService.buildCache();
+        }
         this.cacheHelperFactory.addStrategyService(CacheDataSourceTypeEnum.Local, localStrategyService);
+    }
+
+    public void MySqlStrategyService() {
+        //MySql数据源初始化
+        MySQLStrategyService mySQLStrategyService = new MySQLStrategyService();
+        //设置工厂策略
+        this.cacheHelperFactory.addStrategyService(CacheDataSourceTypeEnum.MySql, mySQLStrategyService);
     }
 
     public interface IFlowLimitStrategyService {
         Integer getOne(String key) throws Exception;
 
-        Boolean setOne(String key, Integer value, Long timeOut, TimeUnit timeUnit) throws Exception;
+        void setOne(String key, Integer value, Long timeOut, TimeUnit timeUnit) throws Exception;
 
         void deleteKey(String key) throws Exception;
 
@@ -91,9 +105,8 @@ public class FlowLimitCacheHelper {
         }
 
         @Override
-        public Boolean setOne(String key, Integer value, Long timeOut, TimeUnit timeUnit) throws Exception {
+        public void setOne(String key, Integer value, Long timeOut, TimeUnit timeUnit) throws Exception {
             redisTemplate.opsForValue().set(key, value, timeOut, timeUnit);
-            return true;
         }
 
         @Override
@@ -145,32 +158,83 @@ public class FlowLimitCacheHelper {
     }
 
     public static class LocalStrategyService implements IFlowLimitStrategyService {
-//        private Map<Long, Caffeine<Object, Object>> caffeineMap;
-//
-//        private Map<Long, Cache<String,Integer>> cacheMap;
+        private Map<Long, Caffeine<Object, Object>> caffeineMap;
+
+        private Map<Long, Cache<String, Integer>> cacheMap;
 
         public LocalStrategyService() {
         }
 
-//        public LocalStrategyService(Map<Long, Caffeine<Object, Object>> caffeineMap) {
-//            this.caffeineMap = caffeineMap;
-//        }
+        public LocalStrategyService(Map<Long, Caffeine<Object, Object>> caffeineMap) {
+            this.caffeineMap = caffeineMap;
+        }
 
         /**
          * 构建缓存
          */
-//        public synchronized void buildCache(){
-//            this.cacheMap = new HashMap<>();
-//            caffeineMap.forEach((HoldTimeKey, value)-> this.cacheMap.put(HoldTimeKey,value.build()));
-//        }
+        public synchronized void buildCache() {
+            this.cacheMap = new HashMap<>();
+            caffeineMap.forEach((HoldTimeKey, value) -> this.cacheMap.put(HoldTimeKey, value.build()));
+        }
+
+        @Override
+        public Integer getOne(String key) throws Exception {
+            Integer result;
+            for (Cache<String, Integer> value : cacheMap.values()) {
+                result = value.getIfPresent(key);
+                if (result != null) {
+                    return result;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public void setOne(String key, Integer value, Long timeOut, TimeUnit timeUnit) throws Exception {
+            Optional.ofNullable(cacheMap.get(timeUnit.toMillis(timeOut)))
+                    .ifPresent(o -> o.put(key, value));
+        }
+
+        @Override
+        public void deleteKey(String key) throws Exception {
+            for (Cache<String, Integer> cache : cacheMap.values()) {
+                cache.put(key, 0);
+            }
+        }
+
+        @Override
+        public void increaseKey(String key) throws Exception {
+            Integer value;
+            for (Cache<String, Integer> cache : cacheMap.values()) {
+                if (ObjectUtils.isNotEmpty(value = cache.getIfPresent(key))) {
+                    cache.put(key, Optional.ofNullable(value).orElse(0) + 1);
+                    return;
+                }
+            }
+        }
+
+
+        @Override
+        public Boolean increaseKeySafely(String key, Long timeout, Integer countMax) throws Exception {
+            //根据超时时间获取缓存对象
+            Cache<String, Integer> cache = cacheMap.get(timeout);
+            //更新缓存
+            Integer count;
+            cache.put(key, Optional.ofNullable((count = cache.getIfPresent(key))).map(o -> o + 1).orElse(1));
+            //判断有没超限制
+            return Optional.ofNullable(count).orElse(0) >= countMax;
+        }
+    }
+
+    public static class MySQLStrategyService implements IFlowLimitStrategyService {
+
         @Override
         public Integer getOne(String key) throws Exception {
             return null;
         }
 
         @Override
-        public Boolean setOne(String key, Integer value, Long timeOut, TimeUnit timeUnit) throws Exception {
-            return null;
+        public void setOne(String key, Integer value, Long timeOut, TimeUnit timeUnit) throws Exception {
         }
 
         @Override
@@ -183,13 +247,11 @@ public class FlowLimitCacheHelper {
 
         }
 
-
         @Override
         public Boolean increaseKeySafely(String key, Long timeout, Integer CountMax) throws Exception {
             return null;
         }
     }
-
     public static class CacheHelperFactory {
         private Map<CacheDataSourceTypeEnum, IFlowLimitStrategyService> map = new HashMap<>();
         private static final Timer CHANGE_STRATEGY_TIMER = new Timer();
@@ -213,17 +275,15 @@ public class FlowLimitCacheHelper {
 
         }
 
-        public Boolean setOne(String key, Integer value, Long timeOut, TimeUnit timeUnit) {
-            return Optional.ofNullable(map.get(strategy))
-                    .map(o -> {
+        public void setOne(String key, Integer value, Long timeOut, TimeUnit timeUnit) {
+            Optional.ofNullable(map.get(strategy))
+                    .ifPresent(o -> {
                         try {
-                            return o.setOne(key, value, timeOut, timeUnit);
+                            o.setOne(key, value, timeOut, timeUnit);
                         } catch (Exception e) {
                             changeStrategy();
-                            return false;
                         }
-                    })
-                    .orElse(false);
+                    });
         }
 
         public void deleteKey(String key) {
@@ -269,10 +329,14 @@ public class FlowLimitCacheHelper {
         public synchronized void changeStrategy() {
             strategy = CacheDataSourceTypeEnum.Local;
             //构建缓存对象
-//            Optional.ofNullable(map.get(CacheDataSourceTypeEnum.Local))
-//                    .ifPresent(o->((LocalStrategyService)o).buildCache());
+            Optional.ofNullable(map.get(CacheDataSourceTypeEnum.Local))
+                    .ifPresent(o -> ((LocalStrategyService) o).buildCache());
             //取消之前的定时器
-            CHANGE_STRATEGY_TIMER.cancel();
+            try {
+                CHANGE_STRATEGY_TIMER.cancel();
+            } catch (Exception e) {
+
+            }
             //开启新的定时器
             CHANGE_STRATEGY_TIMER.schedule(new TimerTask() {
                 @Override
