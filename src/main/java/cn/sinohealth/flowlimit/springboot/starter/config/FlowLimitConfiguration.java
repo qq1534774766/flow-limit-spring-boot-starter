@@ -85,10 +85,7 @@ abstract class FlowLimitConfiguration {
                 }
             } else {
                 if (!enableRedisFlowLimit.get()) {
-                    for (IFlowLimitAspect i : iFlowLimitAspectMap.values()) {
-                        log.info("发现[流量限制启动器]实现类：{}", i.getClass().getName());
-                    }
-                    for (IFlowLimitInterceptor i : iFlowLimitInterceptorMap.values()) {
+                    for (IFlowLimit i : iFlowLimitMap.values()) {
                         log.info("发现[流量限制启动器]实现类：{}", i.getClass().getName());
                     }
                 }
@@ -96,13 +93,8 @@ abstract class FlowLimitConfiguration {
         }
 
         @Autowired(required = false)
-        public void redisFlowLimitInterceptor(AbstractRedisFlowLimitInterceptor redisFlowLimitInterceptor,
-                                              FlowLimitProperties flowLimitProperties,
-                                              RedisFlowLimitTemplateHelper redisHelper) {
-            AbstractRedisFlowLimitAspect redisFlowLimitAspect = redisFlowLimitInterceptor.getRedisFlowLimitAspect();
-            redisFlowLimitAspect.setRedisTemplate(redisHelper)
-                    .setCounterKeyProperties(flowLimitProperties.getRedisFlowLimitProperties());
-            redisFlowLimitAspect.initBeanProperties();
+        public void redisFlowLimitInterceptor(AbstractRedisFlowLimitInterceptor redisFlowLimitInterceptor) {
+            redisFlowLimitInterceptor.setOwn(redisFlowLimitInterceptor);
         }
     }
 }
