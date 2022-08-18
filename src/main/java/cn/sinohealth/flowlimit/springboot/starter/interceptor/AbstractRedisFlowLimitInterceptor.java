@@ -1,12 +1,8 @@
 package cn.sinohealth.flowlimit.springboot.starter.interceptor;
 
-import cn.sinohealth.flowlimit.springboot.starter.aspect.impl.AbstractRedisFlowLimitAspect;
-import lombok.Data;
+import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractRedisFlowLimitAspect;
 import org.apache.commons.lang3.ObjectUtils;
 import org.aspectj.lang.JoinPoint;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -20,97 +16,33 @@ import java.util.Optional;
 /**
  * @Author: wenqiaogang
  * @DateTime: 2022/7/29 11:07
- * @Description: 使用适配器模式，在RedisAspect基础上改造
+ * @Description: 使用基于类的适配器模式，在RedisAspect基础上改造
  */
-@Data
-public abstract class AbstractRedisFlowLimitInterceptor
-        implements IFlowLimitInterceptor, WebMvcConfigurer, ApplicationContextAware {
+public abstract class AbstractRedisFlowLimitInterceptor extends AbstractRedisFlowLimitAspect
+        implements IFlowLimitInterceptor, WebMvcConfigurer {
 
-    private AbstractRedisFlowLimitAspect redisFlowLimitAspect = new RedisFlowLimitAspectImpl();
-    private ThreadLocal<Map<String, Object>> threadLocalMap = new ThreadLocal<>();
+    //region 成员变量
+    /**
+     * 存放HttpServletRequest，HttpServletResponse
+     */
+    private final ThreadLocal<Map<String, Object>> threadLocalMap = new ThreadLocal<>();
+    /**
+     * 拦截器自己，在AutoConfiguration中获取用户实现的拦截器
+     */
+    private AbstractRedisFlowLimitInterceptor own;
+    //endregion
 
-    private class RedisFlowLimitAspectImpl extends AbstractRedisFlowLimitAspect {
-
-        @Override
-        protected boolean filterRequest(JoinPoint joinPoint) {
-            return AbstractRedisFlowLimitInterceptor.this.filterRequest(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
-                    getHandlerFromThreadLocalSafely());
-        }
-
-        @Override
-        protected boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint joinPoint) {
-            return AbstractRedisFlowLimitInterceptor.this.beforeLimitingHappenWhetherContinueLimit(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
-                    getHandlerFromThreadLocalSafely());
-        }
-
-        @Override
-        protected Object rejectHandle(JoinPoint joinPoint) throws Throwable {
-            AbstractRedisFlowLimitInterceptor.this.rejectHandle(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
-                    getHandlerFromThreadLocalSafely());
-            return false;
-        }
-
-        @Override
-        public String appendCounterKeyWithMode() {
-            return "interceptor:";
-        }
-
-        @Override
-        protected String appendCounterKeyWithUserId(JoinPoint joinPoint) {
-            return AbstractRedisFlowLimitInterceptor.this.appendCounterKeyWithUserId(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
-                    getHandlerFromThreadLocalSafely());
-        }
-
-        @Override
-        protected Object otherHandle(JoinPoint joinPoint, boolean isReject, Object rejectResult) throws Throwable {
-            //true放行
-            if (ObjectUtils.isNotEmpty(rejectResult) && rejectResult instanceof Boolean) {
-                return rejectResult;
-            }
-            //被拒绝 isReject=true，返回false
-            //没有被拒绝
-            return !isReject;
-        }
-
-        private HttpServletRequest getRequestFromThreadLocalSafely() {
-            return (HttpServletRequest) Optional.ofNullable(threadLocalMap.get())
-                    .map(o -> o.get("request"))
-                    .orElse(null);
-        }
-
-        private HttpServletResponse getResponseFromThreadLocalSafely() {
-            return (HttpServletResponse) Optional.ofNullable(threadLocalMap.get())
-                    .map(o -> o.get("response"))
-                    .orElse(null);
-        }
-
-        private Object getHandlerFromThreadLocalSafely() {
-            return Optional.ofNullable(threadLocalMap.get())
-                    .map(o -> o.get("handler"))
-                    .orElse(null);
-        }
-
-        @Override
-        public final void pointcut() {
-        }
-
-    }
-
-    @Override
-    public boolean limitProcess(JoinPoint joinPoint) {
-        return redisFlowLimitAspect.limitProcess(joinPoint);
-    }
-
+    //region 拦截器方法
     @Override
     public final boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        if (!redisFlowLimitAspect.isEnabled()) return true;
+        if (!isEnabled()) return true;
         HashMap<String, Object> map = new HashMap<>();
         map.put("request", request);
         map.put("response", response);
         map.put("handler", handler);
         threadLocalMap.set(map);
         try {
-            return (boolean) redisFlowLimitAspect.flowLimitProcess(null);
+            return (boolean) flowLimitProcess(null);
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
@@ -121,18 +53,15 @@ public abstract class AbstractRedisFlowLimitInterceptor
         threadLocalMap.remove();//防止内存泄漏
     }
 
-    private static Map<String, AbstractRedisFlowLimitInterceptor> beansOfType;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        //取出用户实现的拦截器
-        beansOfType = applicationContext.getBeansOfType(AbstractRedisFlowLimitInterceptor.class);
-    }
-
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         //注册用户的拦截器
-        beansOfType.values().forEach(it -> setInterceptorPathPatterns(registry.addInterceptor(it)));
+        setInterceptorPathPatterns(registry.addInterceptor(getOwn()));
+    }
+
+    @Override
+    public String appendCounterKeyWithMode() {
+        return "interceptor:";
     }
 
     /**
@@ -141,6 +70,82 @@ public abstract class AbstractRedisFlowLimitInterceptor
      * @param registry
      */
     public abstract void setInterceptorPathPatterns(InterceptorRegistration registry);
+    //endregion
+
+    //region 适配器方法，为了拦截器方法能适配AOP的方法
+    @Override
+    protected boolean filterRequest(JoinPoint obj) {
+        return filterRequest(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
+                getHandlerFromThreadLocalSafely());
+    }
+
+    @Override
+    protected boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint obj) {
+        return beforeLimitingHappenWhetherContinueLimit(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
+                getHandlerFromThreadLocalSafely());
+    }
+
+    @Override
+    protected Object rejectHandle(JoinPoint obj) throws Throwable {
+        rejectHandle(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
+                getHandlerFromThreadLocalSafely());
+        return false;
+    }
 
 
+    @Override
+    protected String appendCounterKeyWithUserId(JoinPoint joinPoint) {
+        return AbstractRedisFlowLimitInterceptor.this.appendCounterKeyWithUserId(getRequestFromThreadLocalSafely(), getResponseFromThreadLocalSafely(),
+                getHandlerFromThreadLocalSafely());
+    }
+
+    //endregion
+    @Override
+    protected Object otherHandle(JoinPoint obj, boolean isReject, Object rejectResult) throws Throwable {
+        //true放行
+        if (ObjectUtils.isNotEmpty(rejectResult) && rejectResult instanceof Boolean) {
+            return rejectResult;
+        }
+        //被拒绝 isReject=true，返回false
+        //没有被拒绝
+        return !isReject;
+    }
+
+    //region 适配时需要的转化方法，从ThreadLocal取出拦截器需要的字段
+    private HttpServletRequest getRequestFromThreadLocalSafely() {
+        return (HttpServletRequest) Optional.ofNullable(threadLocalMap.get())
+                .map(o -> o.get("request"))
+                .orElse(null);
+    }
+
+    private HttpServletResponse getResponseFromThreadLocalSafely() {
+        return (HttpServletResponse) Optional.ofNullable(threadLocalMap.get())
+                .map(o -> o.get("response"))
+                .orElse(null);
+    }
+
+    private Object getHandlerFromThreadLocalSafely() {
+        return Optional.ofNullable(threadLocalMap.get())
+                .map(o -> o.get("handler"))
+                .orElse(null);
+    }
+    //endregion
+
+    //region 其他方法
+
+    /**
+     * 最终方法，因为拦截器适配了AOP 因此本方法失去了意义
+     */
+    @Override
+    public final void pointcut() {
+    }
+
+    public AbstractRedisFlowLimitInterceptor getOwn() {
+        return own;
+    }
+
+    public void setOwn(AbstractRedisFlowLimitInterceptor own) {
+        this.own = own;
+    }
+    //endregion
 }

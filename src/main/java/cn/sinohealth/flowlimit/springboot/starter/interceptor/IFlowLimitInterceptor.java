@@ -1,17 +1,19 @@
 package cn.sinohealth.flowlimit.springboot.starter.interceptor;
 
 import cn.sinohealth.flowlimit.springboot.starter.IFlowLimit;
+import org.aspectj.lang.JoinPoint;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
 
 /**
  * @Author: wenqiaogang
  * @DateTime: 2022/7/28 16:03
  * @Description: TODO
  */
-public interface IFlowLimitInterceptor extends HandlerInterceptor, IFlowLimit {
+public interface IFlowLimitInterceptor extends HandlerInterceptor, IFlowLimit<JoinPoint> {
     /**
      * 过滤不进行限制的请求，比如登录注册、文件下载、静态资源等
      *

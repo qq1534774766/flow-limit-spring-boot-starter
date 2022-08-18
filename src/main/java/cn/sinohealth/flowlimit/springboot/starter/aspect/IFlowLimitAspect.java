@@ -9,7 +9,7 @@ import org.aspectj.lang.annotation.Around;
  * @DateTime: 2022/7/28 13:55
  * @Description: TODO
  */
-public interface IFlowLimitAspect extends IFlowLimit {
+public interface IFlowLimitAspect<T extends JoinPoint> extends IFlowLimit<JoinPoint> {
     /**
      * 切入点
      */
@@ -21,7 +21,7 @@ public interface IFlowLimitAspect extends IFlowLimit {
      * 不建议子类重写。如需重写，则<strong>必须</strong>回调父类的 flowLimitProcess(joinPoint)方法！
      */
     @Around("pointcut()")
-    Object adviceMode(JoinPoint joinPoint) throws Throwable;
+    Object adviceMode(T obj) throws Throwable;
 
 
 }
