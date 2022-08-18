@@ -5,9 +5,9 @@ spring:
     port: 6379
 flowlimit:
   enabled: true
-  redis-flow-limit-properties:
+  counter-flow-limit-properties:
     enabled-global-limit: false
-    data-source-type: local
+    data-source-type: redis
     prefix-key: "icecreamtest::innovative-medicine:desktop-web:redis:flow:limit"
     counter-keys:
       - "counter:second:3:"

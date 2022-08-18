@@ -24,7 +24,7 @@ public class FlowLimitProperties {
     /**
      * Redis流量限制配置属性
      */
-    private CounterFlowLimitProperties redisFlowLimitProperties;
+    private CounterFlowLimitProperties counterFlowLimitProperties;
 
 
     public static class CounterFlowLimitProperties {
@@ -133,11 +133,11 @@ public class FlowLimitProperties {
         this.enabled = enabled;
     }
 
-    public CounterFlowLimitProperties getRedisFlowLimitProperties() {
-        return redisFlowLimitProperties;
+    public CounterFlowLimitProperties getCounterFlowLimitProperties() {
+        return counterFlowLimitProperties;
     }
 
-    public void setRedisFlowLimitProperties(CounterFlowLimitProperties redisFlowLimitProperties) {
-        this.redisFlowLimitProperties = redisFlowLimitProperties;
+    public void setCounterFlowLimitProperties(CounterFlowLimitProperties counterFlowLimitProperties) {
+        this.counterFlowLimitProperties = counterFlowLimitProperties;
     }
 }

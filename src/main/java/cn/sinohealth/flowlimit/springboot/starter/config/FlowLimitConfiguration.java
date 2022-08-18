@@ -7,7 +7,6 @@ import cn.sinohealth.flowlimit.springboot.starter.interceptor.IFlowLimitIntercep
 import cn.sinohealth.flowlimit.springboot.starter.interceptor.AbstractRedisFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
 import cn.sinohealth.flowlimit.springboot.starter.utils.FlowLimitCacheHelper;
-import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
@@ -82,7 +81,7 @@ abstract class FlowLimitConfiguration {
         @Bean
         @ConditionalOnBean({IFlowLimit.class})
         public FlowLimitProperties.CounterFlowLimitProperties redisFlowLimitProperties(FlowLimitProperties flowLimitProperties) {
-            FlowLimitProperties.CounterFlowLimitProperties redisFlowLimitProperties = flowLimitProperties.getRedisFlowLimitProperties();
+            FlowLimitProperties.CounterFlowLimitProperties redisFlowLimitProperties = flowLimitProperties.getCounterFlowLimitProperties();
             if (ObjectUtils.isEmpty(redisFlowLimitProperties)) return null;
             int size1 = redisFlowLimitProperties.getCounterLimitNumber().size();
             int size2 = redisFlowLimitProperties.getCounterHoldingTime().size();
@@ -105,7 +104,7 @@ abstract class FlowLimitConfiguration {
             Map<String, IFlowLimitInterceptor> iFlowLimitInterceptorMap = applicationContext.getBeansOfType(IFlowLimitInterceptor.class);
             Map<String, FlowLimitProperties> flowLimitProperties = applicationContext.getBeansOfType(FlowLimitProperties.class);
             AtomicBoolean enableRedisFlowLimit = new AtomicBoolean(false);
-            flowLimitProperties.values().forEach(it -> enableRedisFlowLimit.set(ObjectUtils.isEmpty(it.getRedisFlowLimitProperties())));
+            flowLimitProperties.values().forEach(it -> enableRedisFlowLimit.set(ObjectUtils.isEmpty(it.getCounterFlowLimitProperties())));
             if (iFlowLimitMap.isEmpty()) {
                 log.error("1.Redis流量限制器未启动!");
                 if (iFlowLimitAspectMap.isEmpty()) {
