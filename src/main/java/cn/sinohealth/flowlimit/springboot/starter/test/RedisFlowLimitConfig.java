@@ -11,8 +11,8 @@ import org.springframework.context.annotation.Configuration;
  * @DateTime: 2022/7/26 17:56
  * @Description: TODO
  */
-//@Configuration
-//@Aspect
+@Configuration
+@Aspect
 public class RedisFlowLimitConfig extends AbstractRedisFlowLimitAspect {
 
     @Pointcut("within(cn.sinohealth.flowlimit.springboot.starter.test.TestController)" +

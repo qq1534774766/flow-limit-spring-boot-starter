@@ -1,13 +1,13 @@
 #应用名称
-spring:
-  redis:
-    host: 192.168.16.87
-    port: 6379
+#spring:
+#  redis:
+#    host: 192.168.16.87
+#    port: 6379
 flowlimit:
   enabled: true
   counter-flow-limit-properties:
     enabled-global-limit: false
-    data-source-type: local
+    data-source-type: redis
     prefix-key: "icecreamtest::innovative-medicine:desktop-web:redis:flow:limit"
     counter-keys:
       - "counter:second:3:"

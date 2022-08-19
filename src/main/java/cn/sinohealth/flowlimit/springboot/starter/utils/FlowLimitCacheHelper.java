@@ -346,63 +346,45 @@ public class FlowLimitCacheHelper {
         }
 
         public Integer getOne(String key) {
-            return Optional.ofNullable(map.get(strategy))
-                    .map(o -> {
-                        try {
-                            return o.getOne(key);
-                        } catch (Exception e) {
-                            changeStrategy();
-                            return -1;
-                        }
-                    })
-                    .orElse(-1);
-
+            try {
+                return map.get(strategy).getOne(key);
+            } catch (Exception e) {
+                changeStrategy();
+                return -1;
+            }
         }
 
         public void setOne(String key, Integer value, Long timeOut, TimeUnit timeUnit) {
-            Optional.ofNullable(map.get(strategy))
-                    .ifPresent(o -> {
-                        try {
-                            o.setOne(key, value, timeOut, timeUnit);
-                        } catch (Exception e) {
-                            changeStrategy();
-                        }
-                    });
+            try {
+                map.get(strategy).setOne(key, value, timeOut, timeUnit);
+            } catch (Exception e) {
+                changeStrategy();
+            }
         }
 
         public void deleteKey(String key) {
-            Optional.ofNullable(map.get(strategy))
-                    .ifPresent(o -> {
-                        try {
-                            o.deleteKey(key);
-                        } catch (Exception e) {
-                            changeStrategy();
-                        }
-                    });
+            try {
+                map.get(strategy).deleteKey(key);
+            } catch (Exception e) {
+                changeStrategy();
+            }
         }
 
         public void increaseKey(String key) {
-            Optional.ofNullable(map.get(strategy))
-                    .ifPresent(o -> {
-                        try {
-                            o.increaseKey(key);
-                        } catch (Exception e) {
-                            changeStrategy();
-                        }
-                    });
+            try {
+                map.get(strategy).increaseKey(key);
+            } catch (Exception e) {
+                changeStrategy();
+            }
         }
 
         public Boolean increaseKeySafely(String key, Long timeout, Integer CountMax) {
-            return Optional.ofNullable(map.get(strategy))
-                    .map(o -> {
-                        try {
-                            return o.increaseKeySafely(key, timeout, CountMax);
-                        } catch (Exception e) {
-                            changeStrategy();
-                            return false;
-                        }
-                    })
-                    .orElse(false);
+            try {
+                return map.get(strategy).increaseKeySafely(key, timeout, CountMax);
+            } catch (Exception e) {
+                changeStrategy();
+                return false;
+            }
         }
 
         /**
@@ -419,17 +401,18 @@ public class FlowLimitCacheHelper {
             //取消之前的定时器
             try {
                 CHANGE_STRATEGY_TIMER.cancel();
+                //开启新的定时器
+                CHANGE_STRATEGY_TIMER.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        strategy = CacheDataSourceTypeEnum.Redis;
+                        log.warn("Flow-Limit-Starter：恢复Redis作为数据源");
+                    }
+                }, 3600 * 1000);
             } catch (Exception e) {
 
             }
-            //开启新的定时器
-            CHANGE_STRATEGY_TIMER.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    strategy = CacheDataSourceTypeEnum.Redis;
-                    log.warn("Flow-Limit-Starter：恢复Redis作为数据源");
-                }
-            }, 3600 * 1000);
+
         }
     }
 

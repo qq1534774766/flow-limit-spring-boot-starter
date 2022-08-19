@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
  * @DateTime: 2022/8/19 14:35
  * @Description: TODO
  */
-@Component
-@Aspect
+//@Component
+//@Aspect
 public class TokenBucketConfig extends AbstractGlobalTokenBucketFlowLimitAspect {
     @Override
     protected boolean filterRequest(JoinPoint obj) {
