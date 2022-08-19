@@ -7,7 +7,7 @@ flowlimit:
   enabled: true
   counter-flow-limit-properties:
     enabled-global-limit: false
-    data-source-type: redis
+    data-source-type: local
     prefix-key: "icecreamtest::innovative-medicine:desktop-web:redis:flow:limit"
     counter-keys:
       - "counter:second:3:"
@@ -25,4 +25,7 @@ flowlimit:
       - 80
       - 320
       - 240000
-
+  global-token-bucket-flow-limit-properties:
+    permits-per-second: 5
+    timeout: 10
+    warmup-period: 1000

@@ -46,7 +46,7 @@ public abstract class AbstractFlowLimit<T> implements IFlowLimit<T> {
         //限流逻辑
         Object rejectResult = null;
         boolean isReject = false;
-        //1.限流计数器计数。
+        //1.限流操作。
         if (limitProcess(obj)) {
             // 2.限流前置操作
             if (beforeLimitingHappenWhetherContinueLimit(obj)) {
@@ -57,7 +57,7 @@ public abstract class AbstractFlowLimit<T> implements IFlowLimit<T> {
                 rejectResult = rejectHandle(obj);
             }
         }
-        //其他操作，如验证通过重置限制计数器等。最后返回执行结果
+        //其他操作，如验证通过重置限制限流器等。最后返回执行结果
         return otherHandle(obj, isReject, rejectResult);
     }
 
@@ -67,7 +67,7 @@ public abstract class AbstractFlowLimit<T> implements IFlowLimit<T> {
      * <br/>
      * 可以反馈客户端滑动验证码，手机验证码登录验证操作。
      *
-     * @return TRUE：用户完成验证->清空计数器->放行。FALSE：未完成验证，执行拒绝策略。
+     * @return TRUE：用户完成验证->清空限流器->放行。FALSE：未完成验证，执行拒绝策略。
      */
     protected abstract boolean beforeLimitingHappenWhetherContinueLimit(T obj);
 
@@ -105,7 +105,7 @@ public abstract class AbstractFlowLimit<T> implements IFlowLimit<T> {
     }
 
     /**
-     * 重置计数器、限流等
+     * 重置限流器、限流等
      *
      * @param obj 连接点
      * @return 保留返回、按需使用

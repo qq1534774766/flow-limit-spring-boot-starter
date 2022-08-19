@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletResponse;
  * @DateTime: 2022/7/29 11:10
  * @Description: TODO
  */
-@Component
+//@Component
 public class RedisFlowLimitInterceptorConfig extends AbstractRedisFlowLimitInterceptor {
 
 

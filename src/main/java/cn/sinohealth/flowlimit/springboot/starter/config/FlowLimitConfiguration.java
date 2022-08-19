@@ -1,20 +1,23 @@
 package cn.sinohealth.flowlimit.springboot.starter.config;
 
 import cn.sinohealth.flowlimit.springboot.starter.IFlowLimit;
+import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractGlobalTokenBucketFlowLimitAspect;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimitAspect;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractRedisFlowLimitAspect;
 import cn.sinohealth.flowlimit.springboot.starter.interceptor.IFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.interceptor.AbstractRedisFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
+import cn.sinohealth.flowlimit.springboot.starter.test.Result;
+import cn.sinohealth.flowlimit.springboot.starter.utils.CacheDataSourceTypeEnum;
 import cn.sinohealth.flowlimit.springboot.starter.utils.FlowLimitCacheHelper;
+import cn.sinohealth.flowlimit.springboot.starter.utils.StartTipUtil;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.*;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -25,7 +28,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisOperations;
-import org.springframework.util.ObjectUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -44,83 +46,58 @@ abstract class FlowLimitConfiguration {
 
 
     @Configuration
-    @ConditionalOnClass({RedisOperations.class})
-    @AutoConfigureAfter({RedisAutoConfiguration.class})
     @ConditionalOnProperty(prefix = "flowlimit", value = {"enabled"}, havingValue = "true")
     static class RedisFlowLimitConfiguration implements ApplicationContextAware {
-
+        /**
+         * 初始化缓存帮助器，初始化了Redis和local两种数据源
+         *
+         * @param counterFlowLimitProperties
+         * @param redisConnectionFactory
+         * @return
+         */
         @Bean
         @ConditionalOnClass(RedisConnectionFactory.class)
-        public FlowLimitCacheHelper redisFlowLimitTemplateHelper(FlowLimitProperties.CounterFlowLimitProperties counterFlowLimitProperties, RedisConnectionFactory redisConnectionFactory) {
-
-            FlowLimitCacheHelper flowLimitCacheHelper = new FlowLimitCacheHelper(counterFlowLimitProperties.getDataSourceType());
-            flowLimitCacheHelper.initRedisStrategyService(redisConnectionFactory);
-            flowLimitCacheHelper.initLocalStrategyService(caffeineMapBuilder(counterFlowLimitProperties));
+        public FlowLimitCacheHelper redisFlowLimitHelper(FlowLimitProperties.CounterFlowLimitProperties counterFlowLimitProperties,
+                                                         @Autowired(required = false) RedisConnectionFactory redisConnectionFactory) {
+            FlowLimitCacheHelper flowLimitCacheHelper = null;
+            flowLimitCacheHelper = new FlowLimitCacheHelper(counterFlowLimitProperties.getDataSourceType());
+            if (ObjectUtils.isNotEmpty(redisConnectionFactory)) {
+                //redis可用
+                flowLimitCacheHelper.initRedisStrategyService(redisConnectionFactory);
+            }
+            //初始化本地缓存
+            flowLimitCacheHelper.initLocalStrategyService(counterFlowLimitProperties.getCounterHoldingTime(), counterFlowLimitProperties.getCounterHoldingTimeUnit());
             return flowLimitCacheHelper;
         }
 
         /**
-         * key:当前计数器的保持时长，Caffeine 缓存对象
+         * 判断计数器的key是否合法
          *
-         * @param counterFlowLimitProperties
+         * @param flowLimitProperties
          * @return
          */
-        public Map<Long, Caffeine<Object, Object>> caffeineMapBuilder(FlowLimitProperties.CounterFlowLimitProperties counterFlowLimitProperties) {
-            List<Long> counterHoldingTime = counterFlowLimitProperties.getCounterHoldingTime();
-            TimeUnit timeUnit = counterFlowLimitProperties.getCounterHoldingTimeUnit();
-            return counterHoldingTime.stream()
-                    .collect(Collectors.toMap(timeUnit::toMillis, holdingTime -> {
-                        return Caffeine.newBuilder()
-                                .initialCapacity(Short.MAX_VALUE) //初始大小
-                                .maximumSize(Long.MAX_VALUE)  //最大大小
-                                .expireAfterAccess(timeUnit.toMillis(holdingTime), TimeUnit.MILLISECONDS); //时间单位
-                    }));
-
-        }
-
         @Bean
         @ConditionalOnBean({IFlowLimit.class})
         public FlowLimitProperties.CounterFlowLimitProperties redisFlowLimitProperties(FlowLimitProperties flowLimitProperties) {
-            FlowLimitProperties.CounterFlowLimitProperties redisFlowLimitProperties = flowLimitProperties.getCounterFlowLimitProperties();
-            if (ObjectUtils.isEmpty(redisFlowLimitProperties)) return null;
-            int size1 = redisFlowLimitProperties.getCounterLimitNumber().size();
-            int size2 = redisFlowLimitProperties.getCounterHoldingTime().size();
-            int size3 = Optional.ofNullable(redisFlowLimitProperties.getCounterKeys()).map(List::size).orElse(0);
-            if (size3 == 0) {
-                log.error("未指定计数器的key，建议在application.yaml指定，否则默认计数器的key使用的是UUID");
-                log.error("可在flowlimit->redis-flow-limit-properties->counter-keys指定");
-            }
-            if ((size3 != 0 && (!(size1 == size2 && size1 == size3))) || size1 != size2) {
-                log.error("1.Redis流量限制器未启动!");
-                log.error("application.yaml中，redis计数器的key数量与相应配置的属性数量不一致！");
-            }
-            return redisFlowLimitProperties;
+            return StartTipUtil.tipCounterKeyAndProperties(flowLimitProperties);
         }
 
+        /**
+         * 发现本启动器，被实现类的子类有什么，打印日志
+         *
+         * @param applicationContext
+         * @throws BeansException
+         */
         @Override
         public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-            Map<String, IFlowLimit> iFlowLimitMap = applicationContext.getBeansOfType(IFlowLimit.class);
-            Map<String, IFlowLimitAspect> iFlowLimitAspectMap = applicationContext.getBeansOfType(IFlowLimitAspect.class);
-            Map<String, IFlowLimitInterceptor> iFlowLimitInterceptorMap = applicationContext.getBeansOfType(IFlowLimitInterceptor.class);
-            Map<String, FlowLimitProperties> flowLimitProperties = applicationContext.getBeansOfType(FlowLimitProperties.class);
-            AtomicBoolean enableRedisFlowLimit = new AtomicBoolean(false);
-            flowLimitProperties.values().forEach(it -> enableRedisFlowLimit.set(ObjectUtils.isEmpty(it.getCounterFlowLimitProperties())));
-            if (iFlowLimitMap.isEmpty()) {
-                log.error("1.Redis流量限制器未启动!");
-                if (iFlowLimitAspectMap.isEmpty()) {
-                    log.error("2.请确保{}被继承实现，且子类被Spring托管", AbstractRedisFlowLimitAspect.class.getSimpleName());
-                } else if (iFlowLimitInterceptorMap.isEmpty()) {
-                    log.error("2.请确保{}被继承实现，且子类被Spring托管", AbstractRedisFlowLimitInterceptor.class.getSimpleName());
-                }
-            } else {
-                if (!enableRedisFlowLimit.get()) {
-                    for (IFlowLimit i : iFlowLimitMap.values()) {
-                        log.info("发现[流量限制启动器]实现类：{}", i.getClass().getName());
-                    }
-                }
-            }
+            StartTipUtil.findFlowLimitInstance(applicationContext);
         }
 
+        /**
+         * 设置拦截器的自我字段，自我字段保存的是用户的实现类，为了将用户实现的列注册到MVC中
+         *
+         * @param redisFlowLimitInterceptor
+         */
         @Autowired(required = false)
         public void redisFlowLimitInterceptor(AbstractRedisFlowLimitInterceptor redisFlowLimitInterceptor) {
             redisFlowLimitInterceptor.setOwn(redisFlowLimitInterceptor);
@@ -131,18 +108,23 @@ abstract class FlowLimitConfiguration {
     @EnableCaching
     @ConditionalOnProperty(prefix = "flowlimit", value = {"enabled"}, havingValue = "true")
     static class CacheConfiguration {
-        @Bean(name = "oneHourCacheManager")
-        public CacheManager oneHourCacheManager() {
-            Caffeine caffeine = Caffeine.newBuilder()
-                    .initialCapacity(10) //初始大小
-                    .maximumSize(11)  //最大大小
-                    .expireAfterWrite(1, TimeUnit.HOURS); //写入/更新之后1小时过期
 
-            CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-            caffeineCacheManager.setAllowNullValues(true);
-            caffeineCacheManager.setCaffeine(caffeine);
-//            caffeineCacheManager.
-            return caffeineCacheManager;
+    }
+
+    @Configuration
+    @ConditionalOnProperty(prefix = "flowlimit", value = {"enabled"}, havingValue = "true")
+    static class GlobalTokenBucketConfiguration {
+        /**
+         * 全局令牌桶启动器配置
+         *
+         * @param flowLimitProperties
+         * @return
+         */
+        @Bean
+        @ConditionalOnBean({AbstractGlobalTokenBucketFlowLimitAspect.class})
+        public FlowLimitProperties.GlobalTokenBucketFlowLimitProperties globalTokenBucketFlowLimitProperties(FlowLimitProperties flowLimitProperties) {
+            return flowLimitProperties.getGlobaltokenBucketFlowLimitProperties();
         }
+
     }
 }

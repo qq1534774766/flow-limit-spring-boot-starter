@@ -3,6 +3,7 @@ package cn.sinohealth.flowlimit.springboot.starter;
 import cn.sinohealth.flowlimit.springboot.starter.utils.FlowLimitCacheHelper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.google.common.util.concurrent.RateLimiter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,6 +15,7 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 /**
  * @Author: wenqiaogang
@@ -46,6 +48,22 @@ public class Test {
     void test1() throws Exception {
         Integer i = null;
         System.out.println(i + 1);
+
+    }
+
+    RateLimiter rateLimiter = RateLimiter.create(5, 5L, TimeUnit.SECONDS);
+
+    @org.junit.jupiter.api.Test
+    void testlimtier() throws Exception {
+        rateLimiter.tryAcquire();
+        for (int i = 0; i < 1000; i++) {
+            Thread.sleep(400);
+            if (rateLimiter.tryAcquire()) {
+                System.out.println("get");
+            } else {
+                System.out.println("limit");
+            }
+        }
 
     }
 }
