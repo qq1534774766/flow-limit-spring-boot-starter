@@ -3,6 +3,7 @@ package cn.sinohealth.flowlimit.springboot.starter.aspect;
 import cn.sinohealth.flowlimit.springboot.starter.AbstractFlowLimit;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
 import cn.sinohealth.flowlimit.springboot.starter.utils.FlowLimitCacheHelper;
+import cn.sinohealth.flowlimit.springboot.starter.utils.StartTipUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -20,7 +21,6 @@ import java.util.stream.Collectors;
  * @DateTime: 2022/7/25 10:33
  * @Description: Redis数据源，计数器的方式限流。排除未登录用户
  */
-@Slf4j
 public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<JoinPoint>
         implements IFlowLimitAspect<JoinPoint> {
 
@@ -111,7 +111,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<Joi
         String appendKeyWithMode = appendCounterKeyWithMode();
         ArrayList<String> keys = new ArrayList<>();
         for (int i = 0; i < redisFlowLimitProperties.getCounterHoldingTime().size(); i++) {
-            keys.add(prefixKey + "flowlimit:" + UUID.randomUUID().toString().replaceAll("-", "") + ":" + appendKeyWithMode);
+            keys.add(prefixKey + "flowlimit:" + UUID.randomUUID().toString().replaceAll("-", "").substring(0, 5) + ":" + appendKeyWithMode);
         }
         return keys;
     }
@@ -133,12 +133,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<Joi
     @PostConstruct
     public AbstractRedisFlowLimitAspect initBeanProperties() {
         if (enabledFlowLimit()) {
-            log.info("\n _______  __        ______   ____    __    ____     __       __  .___  ___.  __  .___________.\n" +
-                    "|   ____||  |      /  __  \\  \\   \\  /  \\  /   /    |  |     |  | |   \\/   | |  | |           |\n" +
-                    "|  |__   |  |     |  |  |  |  \\   \\/    \\/   /     |  |     |  | |  \\  /  | |  | `---|  |----`\n" +
-                    "|   __|  |  |     |  |  |  |   \\            /      |  |     |  | |  |\\/|  | |  |     |  |     \n" +
-                    "|  |     |  `----.|  `--'  |    \\    /\\    /       |  `----.|  | |  |  |  | |  |     |  |     \n" +
-                    "|__|     |_______| \\______/      \\__/  \\__/        |_______||__| |__|  |__| |__|     |__|     \n");
+            StartTipUtil.showBanner();
         }
         return this;
     }

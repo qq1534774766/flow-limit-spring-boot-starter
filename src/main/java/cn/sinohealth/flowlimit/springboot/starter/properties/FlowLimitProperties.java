@@ -125,6 +125,56 @@ public class FlowLimitProperties {
         }
     }
 
+    /**
+     * google 令牌桶算法，配置类
+     */
+    private GlobalTokenBucketFlowLimitProperties GlobaltokenBucketFlowLimitProperties;
+
+    public static class GlobalTokenBucketFlowLimitProperties {
+        /**
+         * QPS.即一秒钟API的调用次数。如果API调用速度超过这个值，会被限流。<br/>
+         * 因为permitsPerSecond实际调整的是令牌的生产速度，每一个请求过来都取出一个令牌，从而被放行去继续请求。 <br/>
+         * 如果请求过多，超过了令牌的生产速度，那么就会被限流无法继续访问！
+         */
+        private Double permitsPerSecond = (double) Integer.MAX_VALUE;
+        /**
+         * 预热期时长，单位毫秒，默认3秒。<br/>
+         * 我们希望令牌的生产速度不是一上来就是最大速度生产的，而是需要一个预热期，<br/>
+         * 预热器内，令牌的生产速度平稳增长直至最大。
+         * 请参考注释：{@link permitsPerSecond}
+         */
+        private Long warmupPeriod = 3000L;
+        /**
+         * 请求获取令牌的超时时长，单位毫秒，默认1秒。<br/>
+         * 当某一请求不能立即获取令牌，意味着整个API达到了限流门槛，设置这个时间来控制请求获取令牌的最大超时时长。
+         */
+        private Long timeout = 1000L;
+
+        public Double getPermitsPerSecond() {
+            return permitsPerSecond;
+        }
+
+        public void setPermitsPerSecond(Double permitsPerSecond) {
+            this.permitsPerSecond = permitsPerSecond;
+        }
+
+        public Long getWarmupPeriod() {
+            return warmupPeriod;
+        }
+
+        public void setWarmupPeriod(Long warmupPeriod) {
+            this.warmupPeriod = warmupPeriod;
+        }
+
+        public Long getTimeout() {
+            return timeout;
+        }
+
+        public void setTimeout(Long timeout) {
+            this.timeout = timeout;
+        }
+    }
+
     public boolean isEnabled() {
         return enabled;
     }

@@ -1,8 +1,8 @@
 #应用名称
-spring:
-  redis:
-    host: 192.168.16.87
-    port: 6379
+#spring:
+#  redis:
+#    host: 192.168.16.87
+#    port: 6379
 flowlimit:
   enabled: true
   counter-flow-limit-properties:
@@ -25,4 +25,7 @@ flowlimit:
       - 80
       - 320
       - 240000
-
+  global-token-bucket-flow-limit-properties:
+    permits-per-second: 5
+    timeout: 10
+    warmup-period: 1000

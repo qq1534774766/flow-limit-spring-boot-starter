@@ -13,7 +13,9 @@ import org.springframework.context.annotation.Import;
  */
 @Configuration
 @EnableConfigurationProperties({FlowLimitProperties.class})
-@Import({FlowLimitConfiguration.RedisFlowLimitConfiguration.class})
+@Import({FlowLimitConfiguration.RedisFlowLimitConfiguration.class,
+        FlowLimitConfiguration.CacheConfiguration.class,
+        FlowLimitConfiguration.GlobalTokenBucketConfiguration.class})
 public class FlowLimitAutoConfiguration {
 
 
