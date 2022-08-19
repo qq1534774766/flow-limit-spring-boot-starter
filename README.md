@@ -13,6 +13,8 @@
     - 策略模式可以更好的拓展系统，目前**已经实现**`Redis`作为数据源、`caffeine`作为本地缓存数据源，**mysql尚未实现**。
     - 考虑到本地缓存是单机模式，不能分布式，所以`默认是Redis`
     - **当Redis无法使用或宕机时**，自动切换到本地数据源！延迟1小时后，自动切换回`Redis数据源`
+  - v1.6
+    - 新增AOP方式的**全局**令牌桶速度限制器。
 
 简单使用，只需引入依赖，简单配置一下就能使用，无侵入，易插拔，易使用。
 
@@ -89,8 +91,8 @@ public class MyRedisFlowLimitConfig extends AbstractRedisFlowLimitAspect {
     //过滤哪些请求，返回TRUE表示对该请求不进行计数限制
     @Override
     protected boolean filterRequest(JoinPoint joinPoint) {
-        if (threadLocal.get().getUseID() ** 1) {
-            //放行超级管理员
+      if (threadLocal.get().getUseID() **1){
+        //放行超级管理员
             return true;
         }
         return false;
