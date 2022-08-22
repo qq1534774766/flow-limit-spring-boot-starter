@@ -39,7 +39,7 @@ public class StartTipUtil {
                     "|   __|  |  |     |  |  |  |   \\            /      |  |     |  | |  |\\/|  | |  |     |  |     \n" +
                     "|  |     |  `----.|  `--'  |    \\    /\\    /       |  `----.|  | |  |  |  | |  |     |  |     \n" +
                     "|__|     |_______| \\______/      \\__/  \\__/        |_______||__| |__|  |__| |__|     |__|     \n");
-            isReady = false;
+            isReady = true;
         }
     }
 
@@ -57,11 +57,14 @@ public class StartTipUtil {
         flowLimitProperties.values().forEach(it -> enableRedisFlowLimit.set(ObjectUtils.isEmpty(it.getCounterFlowLimitProperties())));
         if (iFlowLimitMap.isEmpty()) {
             log.error("1.Redis流量限制器未启动!");
-            if (iFlowLimitAspectMap.isEmpty()) {
-                log.error("2.请确保{}被继承实现，且子类被Spring托管", AbstractRedisFlowLimitAspect.class.getSimpleName());
-            } else if (iFlowLimitInterceptorMap.isEmpty()) {
-                log.error("2.请确保{}被继承实现，且子类被Spring托管", AbstractRedisFlowLimitInterceptor.class.getSimpleName());
-            }
+            log.error("2,请确保抽象类类Abstract XX FlowLimit Aspect/Interceptor被继承实现，且子类被Spring托管");
+//            if (iFlowLimitAspectMap.isEmpty()) {
+//                log.error("2.请确保{}被继承实现，且子类被Spring托管", AbstractRedisFlowLimitAspect.class.getSimpleName());
+//            } else if (iFlowLimitInterceptorMap.isEmpty()) {
+//                log.error("2.请确保{}被继承实现，且子类被Spring托管", AbstractRedisFlowLimitInterceptor.class.getSimpleName());
+//            }  else if (iFlowLimitInterceptorMap.isEmpty()) {
+//                log.error("2.请确保{}被继承实现，且子类被Spring托管", AbstractRedisFlowLimitInterceptor.class.getSimpleName());
+//            }
         } else {
             if (!enableRedisFlowLimit.get()) {
                 for (IFlowLimit i : iFlowLimitMap.values()) {
