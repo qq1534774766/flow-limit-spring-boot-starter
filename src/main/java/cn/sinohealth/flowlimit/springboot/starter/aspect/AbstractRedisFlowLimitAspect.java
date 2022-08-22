@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 /**
  * @Author: wenqiaogang
  * @DateTime: 2022/7/25 10:33
- * @Description: Redis数据源，计数器的方式限流。排除未登录用户
+ * @Description: Redis数据源，计数器的方式限流。
  */
 public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<JoinPoint>
         implements IFlowLimitAspect<JoinPoint> {
