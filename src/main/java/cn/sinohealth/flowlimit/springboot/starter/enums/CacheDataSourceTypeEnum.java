@@ -1,9 +1,9 @@
-package cn.sinohealth.flowlimit.springboot.starter.utils;
+package cn.sinohealth.flowlimit.springboot.starter.enums;
 
 /**
  * @Author: wenqiaogang
  * @DateTime: 2022/8/18 11:42
- * @Description: TODO
+ * @Description: 数据源枚举
  */
 public enum CacheDataSourceTypeEnum {
     Redis(1, "Redis数据源"),

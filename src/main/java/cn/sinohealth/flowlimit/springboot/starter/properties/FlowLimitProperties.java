@@ -1,6 +1,6 @@
 package cn.sinohealth.flowlimit.springboot.starter.properties;
 
-import cn.sinohealth.flowlimit.springboot.starter.utils.CacheDataSourceTypeEnum;
+import cn.sinohealth.flowlimit.springboot.starter.enums.CacheDataSourceTypeEnum;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

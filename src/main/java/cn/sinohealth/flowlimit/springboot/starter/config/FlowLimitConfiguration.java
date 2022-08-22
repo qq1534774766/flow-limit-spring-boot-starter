@@ -23,7 +23,7 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 /**
  * @Author: wenqiaogang
  * @DateTime: 2022/7/27 9:55
- * @Description: TODO
+ * @Description: 流量限制自动配置类，具体装配类
  */
 @Slf4j
 abstract class FlowLimitConfiguration {
