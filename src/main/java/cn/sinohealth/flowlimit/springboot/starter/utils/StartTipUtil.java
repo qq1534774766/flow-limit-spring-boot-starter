@@ -1,9 +1,7 @@
 package cn.sinohealth.flowlimit.springboot.starter.utils;
 
 import cn.sinohealth.flowlimit.springboot.starter.IFlowLimit;
-import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractRedisFlowLimitAspect;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimitAspect;
-import cn.sinohealth.flowlimit.springboot.starter.interceptor.AbstractRedisFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.interceptor.IFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
 import lombok.extern.slf4j.Slf4j;

@@ -1,7 +1,5 @@
 package cn.sinohealth.flowlimit.springboot.starter.utils;
 
-import lombok.Data;
-
 /**
  * @Author: wenqiaogang
  * @DateTime: 2022/8/18 11:42

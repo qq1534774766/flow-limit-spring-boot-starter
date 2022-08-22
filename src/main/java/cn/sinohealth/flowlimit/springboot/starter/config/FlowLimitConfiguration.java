@@ -2,40 +2,23 @@ package cn.sinohealth.flowlimit.springboot.starter.config;
 
 import cn.sinohealth.flowlimit.springboot.starter.IFlowLimit;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractGlobalTokenBucketFlowLimitAspect;
-import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimitAspect;
-import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractRedisFlowLimitAspect;
 import cn.sinohealth.flowlimit.springboot.starter.interceptor.AbstractGlobalTokenBucketFlowLimitInterceptor;
-import cn.sinohealth.flowlimit.springboot.starter.interceptor.IFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.interceptor.AbstractRedisFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
-import cn.sinohealth.flowlimit.springboot.starter.test.Result;
-import cn.sinohealth.flowlimit.springboot.starter.utils.CacheDataSourceTypeEnum;
 import cn.sinohealth.flowlimit.springboot.starter.utils.FlowLimitCacheHelper;
 import cn.sinohealth.flowlimit.springboot.starter.utils.StartTipUtil;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigureAfter;
-import org.springframework.boot.autoconfigure.condition.*;
-import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
-import org.springframework.cache.CacheManager;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.RedisOperations;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 /**
  * @Author: wenqiaogang
