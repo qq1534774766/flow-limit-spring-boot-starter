@@ -337,7 +337,7 @@ public class FlowLimitCacheHelper {
         }
     }
     public static class CacheHelperFactory {
-        private Map<CacheDataSourceTypeEnum, IFlowLimitStrategyService> map = new HashMap<>();
+        private final Map<CacheDataSourceTypeEnum, IFlowLimitStrategyService> map = new HashMap<>();
         private static final Timer CHANGE_STRATEGY_TIMER = new Timer();
 
 
@@ -393,7 +393,7 @@ public class FlowLimitCacheHelper {
          * @return
          */
         private synchronized void changeStrategy() {
-            log.error("Flow-Limit-Starter:数据源：【{}】失效，切换为{}作为数据源", strategy.getDescribe(), CacheDataSourceTypeEnum.Local.getDescribe());
+            log.error("Flow-Limit-Starter:数据源：【{}】失效，切换为【{}】作为数据源", strategy.getDescribe(), CacheDataSourceTypeEnum.Local.getDescribe());
             strategy = CacheDataSourceTypeEnum.Local;
             //构建缓存对象
             Optional.ofNullable(map.get(CacheDataSourceTypeEnum.Local))
@@ -406,7 +406,7 @@ public class FlowLimitCacheHelper {
                     @Override
                     public void run() {
                         strategy = CacheDataSourceTypeEnum.Redis;
-                        log.warn("Flow-Limit-Starter：恢复Redis作为数据源");
+                        log.warn("Flow-Limit-Starter：恢复【{}】作为数据源", strategy);
                     }
                 }, 3600 * 1000);
             } catch (Exception e) {

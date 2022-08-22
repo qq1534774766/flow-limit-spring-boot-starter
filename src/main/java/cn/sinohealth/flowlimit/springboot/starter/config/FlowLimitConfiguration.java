@@ -4,6 +4,7 @@ import cn.sinohealth.flowlimit.springboot.starter.IFlowLimit;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractGlobalTokenBucketFlowLimitAspect;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.IFlowLimitAspect;
 import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractRedisFlowLimitAspect;
+import cn.sinohealth.flowlimit.springboot.starter.interceptor.AbstractGlobalTokenBucketFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.interceptor.IFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.interceptor.AbstractRedisFlowLimitInterceptor;
 import cn.sinohealth.flowlimit.springboot.starter.properties.FlowLimitProperties;
@@ -56,7 +57,7 @@ abstract class FlowLimitConfiguration {
          * @return
          */
         @Bean
-        @ConditionalOnClass(RedisConnectionFactory.class)
+        @ConditionalOnBean({IFlowLimit.class})
         public FlowLimitCacheHelper redisFlowLimitHelper(FlowLimitProperties.CounterFlowLimitProperties counterFlowLimitProperties,
                                                          @Autowired(required = false) RedisConnectionFactory redisConnectionFactory) {
             FlowLimitCacheHelper flowLimitCacheHelper = null;
@@ -101,6 +102,11 @@ abstract class FlowLimitConfiguration {
         @Autowired(required = false)
         public void redisFlowLimitInterceptor(AbstractRedisFlowLimitInterceptor redisFlowLimitInterceptor) {
             redisFlowLimitInterceptor.setOwn(redisFlowLimitInterceptor);
+        }
+
+        @Autowired(required = false)
+        public void globalTokenBucketFlowLimitInterceptor(AbstractGlobalTokenBucketFlowLimitInterceptor interceptor) {
+            interceptor.setOwn(interceptor);
         }
     }
 

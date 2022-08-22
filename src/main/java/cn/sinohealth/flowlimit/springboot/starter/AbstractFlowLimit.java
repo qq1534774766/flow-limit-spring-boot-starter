@@ -6,7 +6,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
 /**
  * @Author: wenqiaogang
  * @DateTime: 2022/7/25 10:02
- * @Description: 限流、反爬抽象类。 《模板方法模式》，子类可以继承该类，以实现不同的限制策略
+ * @Description: 限流、反爬抽象顶级类。 《模板方法模式》，子类可以继承该类，以实现不同的限制策略
  * <br/>
  */
 @Data

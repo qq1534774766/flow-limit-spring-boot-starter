@@ -1,6 +1,6 @@
 package cn.sinohealth.flowlimit.springboot.starter.interceptor;
 
-import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractRedisFlowLimitAspect;
+import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractGlobalTokenBucketFlowLimitAspect;
 import cn.sinohealth.flowlimit.springboot.starter.utils.InterceptorUtil;
 import org.apache.commons.lang3.ObjectUtils;
 import org.aspectj.lang.JoinPoint;
@@ -15,13 +15,13 @@ import java.util.Map;
 
 /**
  * @Author: wenqiaogang
- * @DateTime: 2022/7/29 11:07
- * @Description: 使用基于类的适配器模式，在RedisAspect基础上改造
+ * @DateTime: 2022/8/22 14:38
+ * @Description: 抽象的流量限制器，
  */
-public abstract class AbstractRedisFlowLimitInterceptor extends AbstractRedisFlowLimitAspect
+public abstract class AbstractGlobalTokenBucketFlowLimitInterceptor
+        extends AbstractGlobalTokenBucketFlowLimitAspect
         implements IFlowLimitInterceptor, WebMvcConfigurer {
-
-    //region 成员变量
+    // 成员变量
     /**
      * 存放HttpServletRequest，HttpServletResponse
      */
@@ -29,10 +29,14 @@ public abstract class AbstractRedisFlowLimitInterceptor extends AbstractRedisFlo
     /**
      * 拦截器自己，在AutoConfiguration中获取用户实现的拦截器
      */
-    private AbstractRedisFlowLimitInterceptor own;
-    //endregion
+    private AbstractGlobalTokenBucketFlowLimitInterceptor own;
 
-    //region 拦截器方法
+    @Override
+    public final void pointcut() {
+
+    }
+
+
     @Override
     public final boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         if (!isEnabled()) return true;
@@ -59,28 +63,24 @@ public abstract class AbstractRedisFlowLimitInterceptor extends AbstractRedisFlo
         setInterceptorPathPatterns(registry.addInterceptor(getOwn()));
     }
 
-    @Override
-    public String appendCounterKeyWithMode() {
-        return "interceptor:";
-    }
-
     /**
      * 设置拦截器的拦截配置，比如路径配置等
      *
      * @param registry
      */
     public abstract void setInterceptorPathPatterns(InterceptorRegistration registry);
-    //endregion
 
-    //region 适配器方法，为了拦截器方法能适配AOP的方法
-    @Override
-    protected boolean filterRequest(JoinPoint obj) {
-        return InterceptorUtil.filterRequest(this, threadLocalMap);
+    public AbstractGlobalTokenBucketFlowLimitInterceptor getOwn() {
+        return own;
+    }
+
+    public void setOwn(AbstractGlobalTokenBucketFlowLimitInterceptor own) {
+        this.own = own;
     }
 
     @Override
-    protected boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint obj) {
-        return InterceptorUtil.beforeLimitingHappenWhetherContinueLimit(this, threadLocalMap);
+    protected boolean filterRequest(JoinPoint obj) {
+        return InterceptorUtil.filterRequest(this, threadLocalMap);
     }
 
     @Override
@@ -88,13 +88,11 @@ public abstract class AbstractRedisFlowLimitInterceptor extends AbstractRedisFlo
         return InterceptorUtil.rejectHandle(this, threadLocalMap);
     }
 
-
     @Override
-    protected String appendCounterKeyWithUserId(JoinPoint joinPoint) {
-        return InterceptorUtil.appendCounterKeyWithUserId(this, threadLocalMap);
+    public final String appendCounterKeyWithUserId(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        return null;
     }
 
-    //endregion
     @Override
     protected Object otherHandle(JoinPoint obj, boolean isReject, Object rejectResult) throws Throwable {
         //true放行
@@ -105,24 +103,4 @@ public abstract class AbstractRedisFlowLimitInterceptor extends AbstractRedisFlo
         //没有被拒绝
         return !isReject;
     }
-
-
-
-    //region 其他方法
-
-    /**
-     * 最终方法，因为拦截器适配了AOP 因此本方法失去了意义
-     */
-    @Override
-    public final void pointcut() {
-    }
-
-    public AbstractRedisFlowLimitInterceptor getOwn() {
-        return own;
-    }
-
-    public void setOwn(AbstractRedisFlowLimitInterceptor own) {
-        this.own = own;
-    }
-    //endregion
 }

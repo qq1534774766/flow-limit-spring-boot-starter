@@ -42,6 +42,7 @@ public interface IFlowLimitInterceptor extends HandlerInterceptor, IFlowLimit<Jo
      * <br/>
      * 可以进行拒绝操作,如 1.抛出异常
      *
+     * @return
      */
-    void rejectHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception;
+    Object rejectHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception;
 }

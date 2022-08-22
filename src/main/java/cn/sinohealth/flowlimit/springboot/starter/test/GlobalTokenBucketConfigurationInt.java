@@ -1,6 +1,7 @@
 package cn.sinohealth.flowlimit.springboot.starter.test;
 
-import cn.sinohealth.flowlimit.springboot.starter.interceptor.AbstractRedisFlowLimitInterceptor;
+import cn.sinohealth.flowlimit.springboot.starter.interceptor.AbstractGlobalTokenBucketFlowLimitInterceptor;
+import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistration;
 
 import javax.servlet.http.HttpServletRequest;
@@ -8,22 +9,21 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  * @Author: wenqiaogang
- * @DateTime: 2022/7/29 11:10
+ * @DateTime: 2022/8/22 14:45
  * @Description: TODO
  */
-//@Component
-public class RedisFlowLimitInterceptorConfig extends AbstractRedisFlowLimitInterceptor {
-
+@Component
+public class GlobalTokenBucketConfigurationInt extends AbstractGlobalTokenBucketFlowLimitInterceptor {
+    @Override
+    public void setInterceptorPathPatterns(InterceptorRegistration registry) {
+        registry.addPathPatterns("/**/**");
+    }
 
     @Override
     public boolean filterRequest(HttpServletRequest request, HttpServletResponse response, Object handler) {
         return false;
     }
 
-    @Override
-    public String appendCounterKeyWithUserId(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        return null;
-    }
 
     @Override
     public boolean beforeLimitingHappenWhetherContinueLimit(HttpServletRequest request, HttpServletResponse response, Object handler) {
@@ -33,13 +33,9 @@ public class RedisFlowLimitInterceptorConfig extends AbstractRedisFlowLimitInter
     @Override
     public Object rejectHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         response.setCharacterEncoding("utf-8");
+        response.setContentType("application/json;");
         response.getWriter().write("接口调用频繁");
-        response.setStatus(404);
+        response.setStatus(500);
         return handler;
-    }
-
-    @Override
-    public void setInterceptorPathPatterns(InterceptorRegistration registry) {
-        registry.addPathPatterns("/**/**");
     }
 }
