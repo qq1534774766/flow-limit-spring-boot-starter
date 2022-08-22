@@ -2,9 +2,7 @@ package cn.sinohealth.flowlimit.springboot.starter.test;
 
 import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractRedisFlowLimitAspect;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * @Author: wenqiaogang

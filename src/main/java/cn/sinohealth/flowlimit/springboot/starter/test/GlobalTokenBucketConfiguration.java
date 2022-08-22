@@ -2,7 +2,6 @@ package cn.sinohealth.flowlimit.springboot.starter.test;
 
 import cn.sinohealth.flowlimit.springboot.starter.aspect.AbstractGlobalTokenBucketFlowLimitAspect;
 import org.aspectj.lang.JoinPoint;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * @Author: wenqiaogang

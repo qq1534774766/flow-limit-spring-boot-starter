@@ -1,7 +1,5 @@
 package cn.sinohealth.flowlimit.springboot.starter;
 
-import org.aspectj.lang.JoinPoint;
-
 /**
  * @Author: wenqiaogang
  * @DateTime: 2022/7/28 9:54
