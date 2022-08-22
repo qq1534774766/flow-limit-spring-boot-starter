@@ -21,7 +21,7 @@ import java.util.Map;
 public abstract class AbstractRedisFlowLimitInterceptor extends AbstractRedisFlowLimitAspect
         implements IFlowLimitInterceptor, WebMvcConfigurer {
 
-    //region 成员变量
+
     /**
      * 存放HttpServletRequest，HttpServletResponse
      */
@@ -30,9 +30,7 @@ public abstract class AbstractRedisFlowLimitInterceptor extends AbstractRedisFlo
      * 拦截器自己，在AutoConfiguration中获取用户实现的拦截器
      */
     private AbstractRedisFlowLimitInterceptor own;
-    //endregion
 
-    //region 拦截器方法
     @Override
     public final boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         if (!isEnabled()) return true;

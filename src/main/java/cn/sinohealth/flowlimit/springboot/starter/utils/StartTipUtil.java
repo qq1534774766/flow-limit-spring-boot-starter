@@ -72,6 +72,12 @@ public class StartTipUtil {
         }
     }
 
+    /**
+     * 友好提示
+     *
+     * @param flowLimitProperties
+     * @return
+     */
     public static FlowLimitProperties.CounterFlowLimitProperties tipCounterKeyAndProperties(FlowLimitProperties flowLimitProperties) {
         FlowLimitProperties.CounterFlowLimitProperties redisFlowLimitProperties = flowLimitProperties.getCounterFlowLimitProperties();
         if (ObjectUtils.isEmpty(redisFlowLimitProperties)) return null;

@@ -31,6 +31,9 @@ public abstract class AbstractGlobalTokenBucketFlowLimitInterceptor
      */
     private AbstractGlobalTokenBucketFlowLimitInterceptor own;
 
+    /**
+     * 拦截器模式下，不需要指定切点
+     */
     @Override
     public final void pointcut() {
 
@@ -88,6 +91,9 @@ public abstract class AbstractGlobalTokenBucketFlowLimitInterceptor
         return InterceptorUtil.rejectHandle(this, threadLocalMap);
     }
 
+    /**
+     * 令牌桶是全局限流的，因为单独限流性能开销太大
+     */
     @Override
     public final String appendCounterKeyWithUserId(HttpServletRequest request, HttpServletResponse response, Object handler) {
         return null;

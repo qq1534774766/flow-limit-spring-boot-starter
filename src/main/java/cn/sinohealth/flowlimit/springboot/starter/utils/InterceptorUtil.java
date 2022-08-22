@@ -10,10 +10,10 @@ import java.util.Optional;
 /**
  * @Author: wenqiaogang
  * @DateTime: 2022/8/22 14:51
- * @Description: TODO
+ * @Description: 拦截器工具类
  */
 public class InterceptorUtil {
-    //region 适配时需要的转化方法，从ThreadLocal取出拦截器需要的字段
+    // 适配时需要的转化方法，从ThreadLocal取出拦截器需要的字段
     public static HttpServletRequest getRequestFromThreadLocalSafely(ThreadLocal<Map<String, Object>> threadLocalMap) {
         return (HttpServletRequest) Optional.ofNullable(threadLocalMap.get())
                 .map(o -> o.get("request"))
@@ -32,6 +32,7 @@ public class InterceptorUtil {
                 .orElse(null);
     }
 
+    //以下都是拦截器适配AOP的方法
     public static boolean filterRequest(IFlowLimitInterceptor interceptor, ThreadLocal<Map<String, Object>> threadLocalMap) {
         return interceptor.filterRequest(InterceptorUtil.getRequestFromThreadLocalSafely(threadLocalMap), InterceptorUtil.getResponseFromThreadLocalSafely(threadLocalMap),
                 InterceptorUtil.getHandlerFromThreadLocalSafely(threadLocalMap));
