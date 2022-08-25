@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 /**
  * @Author: wenqiaogang
  * @DateTime: 2022/7/25 10:33
- * @Description: Redis数据源，计数器的方式限流。排除未登录用户
+ * @Description: Redis数据源，计数器的方式限流。
  */
 public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<JoinPoint>
         implements IFlowLimitAspect<JoinPoint> {
@@ -65,6 +65,13 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<Joi
 
     }
 
+    public AbstractRedisFlowLimitAspect(FlowLimitCacheHelper redisHelper,
+                                        FlowLimitProperties.CounterFlowLimitProperties redisFlowLimitProperties) {
+        setRedisTemplate(redisHelper);
+        setCounterKeyProperties(redisFlowLimitProperties);
+        initBeanProperties();
+    }
+
     @Autowired(required = false)
     public AbstractRedisFlowLimitAspect setRedisTemplate(FlowLimitCacheHelper redisHelper) {
         this.redisHelper = redisHelper;
@@ -75,7 +82,7 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<Joi
      * 初始化所有的成员遍历
      *
      * @param redisFlowLimitProperties 配置类
-     * @return 链式编程
+     * @return this
      */
     @Autowired(required = false)
     public AbstractRedisFlowLimitAspect setCounterKeyProperties(FlowLimitProperties.CounterFlowLimitProperties redisFlowLimitProperties) {
@@ -87,6 +94,19 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<Joi
         this.counterLimitNumber = redisFlowLimitProperties.getCounterLimitNumber();
         timeUnit = redisFlowLimitProperties.getCounterHoldingTimeUnit();
         joinCounterKeys(redisFlowLimitProperties);
+        return this;
+    }
+
+    /**
+     * bean的初始化
+     *
+     * @return this
+     */
+    @PostConstruct
+    public AbstractRedisFlowLimitAspect initBeanProperties() {
+        if (enabledFlowLimit()) {
+            StartTipUtil.showBanner();
+        }
         return this;
     }
 
@@ -124,19 +144,6 @@ public abstract class AbstractRedisFlowLimitAspect extends AbstractFlowLimit<Joi
      */
     public String appendCounterKeyWithMode() {
         return "aspect:";
-    }
-
-    /**
-     * bean的初始化
-     *
-     * @return this
-     */
-    @PostConstruct
-    public AbstractRedisFlowLimitAspect initBeanProperties() {
-        if (enabledFlowLimit()) {
-            StartTipUtil.showBanner();
-        }
-        return this;
     }
 
     /**
