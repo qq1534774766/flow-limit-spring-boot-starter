@@ -20,17 +20,25 @@
 
 # 2.快速开始
 
-1. 引入依赖，依赖需在本地仓库或是局域网内服务器仓库
+## 2.1 引入依赖，依赖需在本地仓库或是局域网内服务器仓库
+
+[访问中康仓库地址](http://192.168.16.87:8081/#browse/browse:maven-snapshots:cn%2Fsinohealth%2Fflow-limit-spring-boot-starter%2F1.6.0-SNAPSHOT%2F1.6.0-20220822.091036-3)
 
 ```xml
 <dependency>
   <groupId>cn.sinohealth</groupId>
   <artifactId>flow-limit-spring-boot-starter</artifactId>
-  <version>1.3.0-SNAPSHOT</version>
+  <version>1.6.0-SNAPSHOT</version>
 </dependency>
 ```
 
-2. 编写application.yaml配置文件
+## 2.2 编写application.yaml配置文件
+
+- counter-flow-limit-properties 与 global-token-bucket-flow-limit-properties:
+  - 选择一个配置就行，前者可以针对**单个用户限流**，后者**只能全局限流**，也可同时配置。
+  - 前者是使用redis的计数器计数来进行限流的
+  - 后者使用的是令牌桶的方式限流的，算法示意图如下
+    - ![img](https://img-blog.csdnimg.cn/img_convert/f9367b5d8a30336fbf1c00a47967cceb.png)
 
 ```yaml
 #配置Redis
@@ -79,7 +87,14 @@ flowlimit:
     warmup-period: 1000
 ```
 
-3.1提供两种实现方式，首先是AOP方式.
+## 2.3 实现代码
+
+### 2.3.1 计数器算法
+
+#### 2.3.1.1 AOP
+
+- AbstractRedisFlowLimitAspect.class
+  - 经典的计数器，计数器有保持时间，计数上线，当达到阈值时，会触发限流
 
 新建一个类MyRedisFlowLimitConfig继承AbstractRedisFlowLimitAspect抽象类，实现抽象类的方法
 
@@ -89,7 +104,7 @@ flowlimit:
 //开启切面
 @Aspect
 public class MyRedisFlowLimitConfig extends AbstractRedisFlowLimitAspect {
-    //选择需要被限制的Controller方法
+  //选择需要被限制的Controller方法
     @Pointcut("within(cn.sinohealth.flowlimit.springboot.starter.test.TestController)" +
             "&&@annotation(org.springframework.web.bind.annotation.RequestMapping)")
     public void pointcut() {
@@ -105,27 +120,29 @@ public class MyRedisFlowLimitConfig extends AbstractRedisFlowLimitAspect {
         return false;
     }
 
-    //当计数器达到上限时执行，返回TRUE则清空计数器放行，否则拒绝策略
-    @Override
-    protected boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint joinPoint) {
-        return false;
-    }
+  //当计数器达到上限时执行，返回TRUE则清空计数器放行，否则拒绝策略
+  @Override
+  protected boolean beforeLimitingHappenWhetherContinueLimit(JoinPoint joinPoint) {
+    return false;
+  }
 
-    //拒绝策略，可以选择抛出异常，或者返回与Controller类型一样的数据封装
-    @Override
-    protected Object rejectHandle(JoinPoint joinPoint) throws Throwable {
-        throw new Exception("AOP拦截接口");
-    }
+  //拒绝策略，可以选择抛出异常，或者返回与Controller类型一样的数据封装
+  @Override
+  protected Object rejectHandle(JoinPoint joinPoint) throws Throwable {
+    response.setCharacterEncoding("utf-8");
+    response.getWriter().write("接口调用频繁");
+    response.setStatus(610);
+  }
 
-    //追加用户的ID，enabled-global-limit: true时，会被调用，返回当前登录用户的ID以便限流只是针对当前用户生效。
-    @Override
-    protected String appendCounterKeyWithUserId(JoinPoint joinPoint) {
-        return threadlocal.get().getUserId();
-    }
+  //追加用户的ID，enabled-global-limit: true时，会被调用，返回当前登录用户的ID以便限流只是针对当前用户生效。
+  @Override
+  protected String appendCounterKeyWithUserId(JoinPoint joinPoint) {
+    return threadlocal.get().getUserId();
+  }
 }
 ```
 
-3.2 第二种方式式拦截器的方式。
+#### 2.3.1.2 拦截器
 
 新建MyRedisFlowLimitInterceptorConfig.class继承AbstractRedisFlowLimitInterceptor并实现其所有方法。
 
@@ -135,7 +152,7 @@ public class MyRedisFlowLimitConfig extends AbstractRedisFlowLimitAspect {
 //交由Spring托管
 @Component
 public class MyRedisFlowLimitInterceptorConfig extends AbstractRedisFlowLimitInterceptor {
-    //设置拦截器的拦截路径
+  //设置拦截器的拦截路径
     @Override
     public void setInterceptorPathPatterns(InterceptorRegistration registry) {
         registry.addPathPatterns("/api/**");
@@ -162,14 +179,167 @@ public class MyRedisFlowLimitInterceptorConfig extends AbstractRedisFlowLimitInt
     //拒绝策略，可以选择抛出异常，或者返回与Controller类型一样的数据封装
     @Override
     public void rejectHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        response.setCharacterEncoding("utf-8");
-        response.getWriter().write("接口调用频繁");
-        response.setStatus(404);
+      response.setCharacterEncoding("utf-8");
+      response.getWriter().write("接口调用频繁");
+      response.setStatus(610);
     }
 
 }
 ```
 
-# 3. 实现原理
+### 2.3.2 令牌桶算法
 
-> 待补充
+[更多详看](https://blog.csdn.net/resilient/article/details/121609412)
+
+#### 2.3.2.1 AOP
+
+新建MyGlobalTokenBucketFlowLimitAspect.class继承AbstractGlobalTokenBucketFlowLimitAspect并实现其所有方法。
+
+```java
+
+@Component
+public class MyGlobalTokenBucketFlowLimitAspect extends AbstractGlobalTokenBucketFlowLimitAspect {
+  //选择需要被限制的Controller方法
+  @Override
+  @Pointcut("within(cn.sinohealth.flowlimit.springboot.starter.test.TestController)" +
+          "&&@annotation(org.springframework.web.bind.annotation.RequestMapping)")
+  public void pointcut() {
+
+  }
+
+  //过滤哪些请求，返回TRUE表示对该请求不进行限制
+  @Override
+  protected boolean filterRequest(JoinPoint obj) {
+    return false;
+  }
+
+  //拒绝策略，可以选择抛出异常，或者返回与Controller类型一样的数据封装
+  @Override
+  protected Object rejectHandle(JoinPoint obj) throws Throwable {
+    response.setCharacterEncoding("utf-8");
+    response.getWriter().write("接口调用频繁");
+    response.setStatus(610);
+  }
+}
+```
+
+### 2.3.2.2 拦截器
+
+新建MyAbstractRedisFlowLimitInterceptor.class继承AbstractRedisFlowLimitInterceptor并实现其所有方法。
+
+```java
+
+@Component
+public class MyAbstractRedisFlowLimitInterceptor extends AbstractGlobalTokenBucketFlowLimitInterceptor {
+  //设置拦截器的拦截路径
+  @Override
+  public void setInterceptorPathPatterns(InterceptorRegistration registry) {
+    registry.addPathPatterns("/**/**");
+  }
+
+  //过滤哪些请求，返回TRUE表示对该请求不进行限制
+  @Override
+  public boolean filterRequest(HttpServletRequest request, HttpServletResponse response, Object handler) {
+    return false;
+  }
+
+  //当计数器达到上限时执行，返回TRUE则清空计数器放行，否则拒绝策略
+  @Override
+  public boolean beforeLimitingHappenWhetherContinueLimit(HttpServletRequest request, HttpServletResponse response, Object handler) {
+    return false;
+  }
+
+  //拒绝策略，可以选择抛出异常，或者返回与Controller类型一样的数据封装
+  @Override
+  public Object rejectHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    response.setCharacterEncoding("utf-8");
+    response.setContentType("application/json;");
+    response.getWriter().write("接口调用频繁");
+    response.setStatus(500);
+    return handler;
+  }
+}
+```
+
+# 3.注意
+
+计数器算法抽象类都有一个公开的方法，resetLimiter();该方法能够重置计数器。
+
+应用场景：当用户请求频繁，后端报错，前端要求用户验证。验证接口可以在Controller中方法，然后调用resetLimiter()方法即可。
+
+```java
+public class MyController {
+  @Autowire
+  private final RedisFlowLimitInterceptor redisLimitInterceptor;
+  @Autowire
+  private final RedisFlowLimitAspect redisLimitAspect;
+
+  //RedisFlowLimitAspect的重置，AOP限流方式
+  @ApiOperation(value = "流量限制器验证操作")
+  @GetMapping(value = "/pb/sms/verify1")
+  public BizResponse<Result<SmsSingleSend>> verifyCodeCheckRegister(HttpServletRequest request) {
+    if (1 == doubleVerify(request)) {
+      //清空计数器,因为使用的是对象适配器，所以拦截只能这么重置
+      redisLimitInterceptor.getRedisFlowLimitAspect().resetLimiter(null);
+      return BizResponse.ok(null);
+    }
+    return BizResponse.bizException(BizHttpStatusEnum.VERIFY_CODE_ERROR);
+  }
+
+  //RedisFlowLimitInterceptor，拦截器限流方式
+  @ApiOperation(value = "流量限制器验证操作")
+  @GetMapping(value = "/pb/sms/verify2")
+  public BizResponse<Result<SmsSingleSend>> verifyCodeCheckRegister(HttpServletRequest request) {
+    if (1 == doubleVerify(request)) {
+      //清空计数器,AOP限流就比较简单
+      redisLimitAspect.resetLimiter(null);
+      return BizResponse.ok(null);
+    }
+    return BizResponse.bizException(BizHttpStatusEnum.VERIFY_CODE_ERROR);
+  }
+}
+```
+
+# 4. 实现原理
+
+最最最核心的就是，顶级抽象类 AbstractFlowLimit.class
+
+中，使用了模板方法，所有的限流流程都是基于这个抽象类的方法的~
+
+```java
+    /**
+ * 定义模板方法，禁止子类重写方法
+ */
+public final Object flowLimitProcess(T obj)throws Throwable{
+        if(!enabled){
+        //未开启限流，或者Redis失效，配置不当
+        return otherHandle(obj,false,null);//放行
+        }
+        if(filterRequest(obj)){
+        //过滤请求，这个方法是抽象的，必须用户来实现该方法。
+        return otherHandle(obj,false,null);//放行
+        }
+        //限流逻辑
+        Object rejectResult=null;
+        boolean isReject=false;
+        //1.限流操作。
+        if(limitProcess(obj)){
+        // 2.限流前置操作
+        if(beforeLimitingHappenWhetherContinueLimit(obj)){//如果放回TRUE，则重置计数器并取消限流
+        resetLimiter(obj);
+        }else{
+        //执行拒绝策略
+        isReject=true;
+        rejectResult=rejectHandle(obj);
+        }
+        }
+        //其他操作，如验证通过重置限制限流器等。最后返回执行结果
+        //ps:如果isReject为TRUE，则不会放行。
+        return otherHandle(obj,isReject,rejectResult);
+        }
+```
+
+
+
+
+
